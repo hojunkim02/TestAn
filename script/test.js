@@ -30,7 +30,7 @@ files.forEach(f => {
 const ansData = parseDataCsv(fs.readFileSync(path.join(dir, "answer.csv"), "utf8"));
 const ansResult = analyze(ansData);
 const st = ansResult.stats;
-function round(x, d) { const p = Math.pow(10, d); return Math.round(x * p) / p; }
+const round = (x, d) => { const p = Math.pow(10, d); return Math.round(x * p) / p; }
 const golden = [
   ["피험자수", st.n, 119],
   ["평균", round(st.mean, 3), 45.059],

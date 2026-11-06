@@ -5,9 +5,9 @@
 
 ## 핵심 공식과 구현
 
-분석 로직(`script/analysis.js`)은 매뉴얼(성태제, 2000) 1부의 공식을 그대로 구현한다.
+분석 로직(`script/analysis.js`)은 매뉴얼(성태제, 2000)의 공식을 그대로 구현한다.
 
-### 문항 난이도 — 매뉴얼 III-1
+### 문항 난이도
 
 $$P = \frac{R}{N}$$
 
@@ -15,7 +15,7 @@ $$P = \frac{R}{N}$$
 difficulty: R[j] / N    // R = 정답자 수, N = 전체 피험자 수
 ```
 
-### 문항 변별도(문항점수-총점 상관계수) — 매뉴얼 III-2
+### 문항 변별도(문항점수-총점 상관계수)
 
 $$r = \frac{N\sum XY - \sum X \sum Y}{\sqrt{N\sum X^2 - (\sum X)^2}\;\sqrt{N\sum Y^2 - (\sum Y)^2}}$$
 
@@ -27,7 +27,7 @@ function pearson(sX, sX2, sXY, sY, sY2, N) {
 }
 ```
 
-### 변별도 지수(상·하위 27% 정답률 차) — 매뉴얼 III-2, Kelly
+### 변별도 지수(상·하위 27% 정답률 차, Kelly)
 
 $$D = P_U - P_L$$
 
@@ -38,7 +38,7 @@ upperCut = sorted[cut - 1].raw;  lowerCut = sorted[N - cut].raw;
 discrimination: (nU ? cU[j] / nU : 0) - (nL ? cL[j] / nL : 0);
 ```
 
-### 오답지 매력도 — 매뉴얼 III-3
+### 오답지 매력도
 
 $$P_o = \frac{1-P}{Q-1}$$
 
@@ -47,7 +47,7 @@ attractiveness: Q > 1 ? (1 - P) / (Q - 1) : 0   // Q = 답지 수
 // 답지 분석에서 응답비율이 P_o보다 높은 오답지를 "◀ 더 매력적임"으로 표시
 ```
 
-### Cronbach α — 매뉴얼 IV-2
+### Cronbach α
 
 $$\alpha = \frac{n}{n-1}\left[1 - \frac{\sum s_i^2}{s_x^2}\right]$$
 
@@ -66,7 +66,7 @@ const sYx = sY - sX[j], sY2x = sY2 - 2 * sXY[j] + sX2[j];
 it.alphaIfDeleted = kk / (kk - 1) * (1 - (sumSi2 - it.s_i2) * scale / varX);
 ```
 
-### 측정오차(SEM) — 매뉴얼 IV-3
+### 측정오차(SEM)
 
 $$SEM = s_x\sqrt{1-\alpha}$$
 

@@ -1,5 +1,5 @@
 "use strict";
-function analyze(data) {
+const analyze = (data) => {
   const { nItems, key, weights, scored, students } = data;
   const N = students.length;
   if (!N) throw new Error("분석할 학생 데이터가 없습니다.");
@@ -125,16 +125,16 @@ function analyze(data) {
     }
   };
 }
-function pearson(sX, sX2, sXY, sY, sY2, N) {
+const pearson = (sX, sX2, sXY, sY, sY2, N) => {
   const dX = N * sX2 - sX * sX, dY = N * sY2 - sY * sY;
   return dX > 0 && dY > 0 ? (N * sXY - sX * sY) / (Math.sqrt(dX) * Math.sqrt(dY)) : 0;
 }
-function median(a) {
+const median = (a) => {
   const s = [...a].sort((x, y) => x - y);
   const m = s.length >> 1;
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 }
-function moment(a, mean, sd, p) {
+const moment = (a, mean, sd, p) => {
   if (a.length < p || sd === 0) return 0;
   return a.reduce((m, x) => m + (x - mean) ** p, 0) / a.length / sd ** p;
 }
