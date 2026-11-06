@@ -11,7 +11,6 @@
   <h1>TestAn Web</h1>
   <p class="subtitle">고전적 문항분석(CTT) 도구 · 원본: TestAn 1.0 for Windows (2000)</p>
 </header>
-
 <main>
   <section class="panel">
     <div class="controls">
@@ -25,7 +24,6 @@
     </div>
     <div id="status" class="status"></div>
   </section>
-
   <nav class="tabs" id="tabs" hidden>
     <button data-tab="input" class="active">입력 데이터</button>
     <button data-tab="score">점수 결과</button>
@@ -33,19 +31,16 @@
     <button data-tab="option">답지 분석</button>
     <button data-tab="graph">그래프</button>
   </nav>
-
   <section id="tab-input" class="tab-content">
     <h2>입력 데이터</h2>
     <div id="inputSummary" class="summary"></div>
     <div class="table-wrap"><table class="data-table" id="inputTable"></table></div>
   </section>
-
   <section id="tab-score" class="tab-content" hidden>
     <h2>점수 결과</h2>
     <div id="scoreSummary" class="summary"></div>
     <div class="table-wrap"><table class="data-table" id="scoreTable"></table></div>
   </section>
-
   <section id="tab-item" class="tab-content" hidden>
     <h2>문항 분석</h2>
     <div class="controls">
@@ -60,7 +55,6 @@
     </div>
     <div class="table-wrap"><table class="data-table" id="itemTable"></table></div>
   </section>
-
   <section id="tab-option" class="tab-content" hidden>
     <h2>답지 분석</h2>
     <div class="controls">
@@ -71,7 +65,6 @@
     </div>
     <table class="data-table" id="optionTable"></table>
   </section>
-
   <section id="tab-graph" class="tab-content" hidden>
     <h2>그래프</h2>
     <div class="controls">
@@ -89,7 +82,6 @@
     <div class="table-wrap"><table class="data-table" id="graphTable"></table></div>
   </section>
 </main>
-
 <div id="newModal" class="modal" hidden>
   <div class="modal-content">
     <h2>새 응답자료 만들기</h2>
@@ -111,7 +103,6 @@
 </div>
 </div>
 </div>
-
 <div id="editModal" class="modal" hidden>
   <div class="modal-content modal-wide">
     <h2>데이터 편집</h2>
@@ -130,7 +121,6 @@
     </div>
   </div>
 </div>
-
 <div id="aboutModal" class="modal" hidden>
   <div class="modal-content modal-narrow">
     <h2>TestAn Web</h2>
@@ -141,11 +131,9 @@
     <button id="aboutClose" class="btn">닫기</button>
   </div>
 </div>
-
 <footer>
   <p>GitHub Pages로 배포되는 정적 웹 앱입니다. 모든 파싱·계산은 브라우저에서 수행됩니다.</p>
 </footer>
-
 <script src="script/data.js"></script>
 <script src="script/analysis.js"></script>
 <script src="script/app.js"></script>

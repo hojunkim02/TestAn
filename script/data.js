@@ -1,13 +1,4 @@
 "use strict";
-
-// 데이터 모델 처리: CSV 단일 포맷
-//
-// id,q1,q2,...,qN          ← 헤더 (q 열 수 = 문항 수)
-// KEY,4,3,...              ← 정답 행
-// OPTIONS,4,4,...           ← 답지 수 행
-// INCLUDE,y,y,...           ← 분석 포함 여부 행
-// 0001,2,3,...              ← 학생 행 (빈 칸 = 무응답)
-
 function parseCsv(text) {
   const rows = [];
   let row = [], cell = "", inQ = false;
@@ -27,16 +18,13 @@ function parseCsv(text) {
   if (cell !== "" || row.length) { row.push(cell); rows.push(row); }
   return rows.filter(r => r.length > 1 || (r.length === 1 && r[0].trim() !== ""));
 }
-
 function csvCell(v) {
   const s = String(v == null ? "" : v);
   return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
 }
-
 function toCsv(rows) {
   return rows.map(r => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
 }
-
 // 응답 CSV → 분석 데이터 모델
 function parseDataCsv(text) {
   const rows = parseCsv(text);
@@ -46,7 +34,6 @@ function parseDataCsv(text) {
     throw new Error("첫 열은 'id'여야 합니다. (헤더: id,q1,q2,...)");
   }
   const nItems = header.length - 1;
-
   let key = null, numOptions = null, scored = null;
   const students = [];
   for (const r of rows.slice(1)) {
@@ -77,7 +64,6 @@ function parseDataCsv(text) {
     }))
   };
 }
-
 // 분석 데이터 모델 → 응답 CSV
 function buildDataCsv(data) {
   const rows = [["id", ...Array.from({ length: data.nItems }, (_, i) => "q" + (i + 1))]];
@@ -87,7 +73,6 @@ function buildDataCsv(data) {
   data.students.forEach(s => rows.push([s.id, ...s.resp.map(c => c === " " ? "" : c)]));
   return toCsv(rows);
 }
-
 // 문항 수만으로 기본 골격 CSV 생성 (새 응답자료 만들기)
 function buildScaffoldCsv(nItems) {
   const rows = [["id", ...Array.from({ length: nItems }, (_, i) => "q" + (i + 1))]];
@@ -96,22 +81,18 @@ function buildScaffoldCsv(nItems) {
   rows.push(["INCLUDE", ...new Array(nItems).fill("y")]);
   return toCsv(rows);
 }
-
 function padCells(cells, n) {
   const out = new Array(n);
   for (let i = 0; i < n; i++) out[i] = cells[i] === undefined ? "" : String(cells[i]).trim();
   return out;
 }
-
 if (typeof module !== "undefined") {
   module.exports = { parseDataCsv, buildDataCsv, buildScaffoldCsv, parseDatText, buildDatText, buildScaffoldDat };
 }
-
 // ---------- 레거시 .dat 형식 입출력 (편집 화면·외부 파일용) ----------
 // 내부 데이터 모델은 CSV와 동일하게 유지되며, .dat은 표현 형식으로만 사용된다.
 // 형식: 첫 줄 = 문항수(1-3열) + ID 캐릿수(9-10열),
 // 이후 정답키 / 답지 수 / 분석 포함(y/n) / 학생 레코드(ID + 응답, 공백=무응답)
-
 function parseDatText(text) {
   const lines = text.replace(/\r\n?/g, "\n").split("\n").filter(l => l.trim().length > 0);
   if (lines.length < 4) throw new Error(".dat 형식이 올바르지 않습니다 (control line과 정답/답지수/포함 여부 줄이 필요).");
@@ -120,12 +101,10 @@ function parseDatText(text) {
   const nItems = header[0];
   if (nItems > 200) throw new Error("문항수는 최대 200문항까지 지원됩니다.");
   const idWidth = header.length > 1 && isFinite(header[1]) ? header[1] : null;
-
   const padTo = (s, len) => s.length >= len ? s.slice(0, len) : s + " ".repeat(len - s.length);
   const key = padTo(lines[1].trim(), nItems).split("");
   const numOptions = padTo(lines[2].trim(), nItems).split("").map(c => parseInt(c, 10) || 0);
   const scored = padTo(lines[3].trim(), nItems).toLowerCase().split("").map(c => c !== "n");
-
   const students = [];
   for (let i = 4; i < lines.length; i++) {
     const raw = lines[i];
@@ -156,7 +135,6 @@ function parseDatText(text) {
     students
   };
 }
-
 function buildDatText(data) {
   const n = data.nItems;
   let idWidth = 1;
@@ -172,7 +150,6 @@ function buildDatText(data) {
   });
   return lines.join("\r\n") + "\r\n";
 }
-
 // 문항 수·ID 캐릿수·항목별 정보로 .dat 골격 생성 (새 응답자료 만들기)
 function buildScaffoldDat(nItems, idWidth, keys, options, flags) {
   const pad = (s, w) => String(s).padStart(w, " ");

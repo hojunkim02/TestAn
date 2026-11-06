@@ -1,10 +1,7 @@
 "use strict";
-
 let currentData = null;
 let currentResult = null;
-
 const $ = id => document.getElementById(id);
-
 $("loadDemo").addEventListener("click", loadDemo);
 $("newData").addEventListener("click", openNewModal);
 $("newBuild").addEventListener("click", wizApplyCount);
@@ -42,7 +39,6 @@ $("aboutClose").addEventListener("click", () => $("aboutModal").hidden = true);
 $("itemSort").addEventListener("change", () => renderItems());
 $("graphMode").addEventListener("change", () => { renderChart(); renderGraphTable(); });
 $("optionItem").addEventListener("change", renderOptions);
-
 document.querySelectorAll("#tabs button").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll("#tabs button").forEach(b => b.classList.remove("active"));
@@ -53,13 +49,11 @@ document.querySelectorAll("#tabs button").forEach(btn => {
     if (btn.dataset.tab === "graph") { renderChart(); renderGraphTable(); }
   });
 });
-
 function setStatus(msg, cls) {
   const el = $("status");
   el.textContent = msg;
   el.className = "status " + (cls || "");
 }
-
 function loadDemo() {
   fetch("sample-data/answer.csv")
     .then(r => { if (!r.ok) throw new Error("샘플 파일을 불러올 수 없습니다."); return r.text(); })
@@ -69,7 +63,6 @@ function loadDemo() {
     })
     .catch(err => setStatus(err.message, "error"));
 }
-
 function run() {
   currentResult = analyze(currentData);
   $("tabs").hidden = false;
@@ -82,17 +75,11 @@ function run() {
   renderChart();
   renderGraphTable();
 }
-
-// 새 응답자료 만들기 — 매뉴얼 폼을 엑셀식으로 현대화:
-// 문항 수·ID 칸 수 입력 → 표의 각 칸(정답/답지 수/분석 포함)을 직접 입력하고
-// Enter(아래 칸)·Tab(오른쪽 칸)으로 이동 → 확인 → 표 편집기로 이어짐
 let wiz = null;
-
 function openNewModal() {
   $("newModal").hidden = false;
   $("wizBody").hidden = true;
 }
-
 function wizApplyCount() {
   const n = Math.max(1, Math.min(200, Number($("newItems").value) || 1));
   const idw = Math.max(1, Math.min(99, Number($("newIdw").value) || 4));
@@ -102,7 +89,6 @@ function wizApplyCount() {
   $("wizBody").hidden = false;
   renderWizTable();
 }
-
 function renderWizTable() {
   let html = "<tr><th>문항 번호</th><th>정답</th><th>답지 수</th><th>분석 포함 여부 (y/n)</th></tr>";
   for (let i = 0; i < wiz.n; i++) {
@@ -113,7 +99,6 @@ function renderWizTable() {
   }
   $("newTable").innerHTML = html;
 }
-
 function wizConfirm() {
   const keys = [], opts = [], flags = [];
   for (let i = 0; i < wiz.n; i++) {
@@ -134,9 +119,6 @@ function wizConfirm() {
   $("newModal").hidden = true;
   setStatus("문항 정보가 입력되었습니다. 학생 응답 행을 추가해 채운 뒤 적용하세요.", "");
 }
-
-// 엑셀식 키 탐색: Enter/↓=같은 열의 아래 칸, ↑=같은 열의 위 칸
-// (Tab/Shift+Tab은 브라우저 기본 동작으로 좌우 이동)
 function gridKeyNav(e, tableId) {
   if (!["Enter", "ArrowDown", "ArrowUp"].includes(e.key)) return;
   const input = e.target;
@@ -166,10 +148,7 @@ function gridKeyNav(e, tableId) {
   }
   if (target) target.focus();
 }
-
-// ---------- 데이터 편집 (표 형태) ----------
 let editModel = null;
-
 function openEditModal(pending) {
   if (pending) {
     editModel = { nItems: pending.nItems, key: [...pending.key], numOptions: [...pending.numOptions],
@@ -185,7 +164,6 @@ function openEditModal(pending) {
   renderEditGrid();
   $("editModal").hidden = false;
 }
-
 function renderEditGrid() {
   const m = editModel;
   $("editInfo").textContent = `문항 ${m.nItems}개 · 학생 ${m.students.length}명`;
@@ -209,7 +187,6 @@ function renderEditGrid() {
       renderEditGrid();
     }));
 }
-
 function metaRow(label, values, idFn, mrowIdx) {
   let html = `<tr><td class="left meta-label">${label}</td>`;
   values.forEach((v, j) => {
@@ -217,7 +194,6 @@ function metaRow(label, values, idFn, mrowIdx) {
   });
   return html + "<td></td></tr>";
 }
-
 function collectGrid() {
   const m = editModel;
   m.key = m.nItems ? Array.from({ length: m.nItems }, (_, j) => ($("editKey" + j).value.trim() || " ").slice(0, 1)) : [];
@@ -229,7 +205,6 @@ function collectGrid() {
     s.resp = Array.from(cells).slice(1).map(c => c.value.trim());
   });
 }
-
 function applyEdit() {
   try {
     collectGrid();
@@ -240,7 +215,6 @@ function applyEdit() {
     alert("편집 내용을 적용할 수 없습니다:\n" + err.message);
   }
 }
-
 function gridToData(m) {
   const students = m.students.map((s, i) => ({
     id: s.id || ("S" + (i + 1)),
@@ -256,11 +230,9 @@ function gridToData(m) {
     students
   };
 }
-
 function escAttr(v) {
   return String(v).replace(/"/g, "&quot;").replace(/</g, "&lt;");
 }
-
 function downloadDat(name, content) {
   const blob = new Blob([content], { type: "text/plain;charset=latin1" });
   const a = document.createElement("a");
@@ -269,13 +241,11 @@ function downloadDat(name, content) {
   a.click();
   URL.revokeObjectURL(a.href);
 }
-
 function renderInput() {
   const d = currentData;
   const included = d.scored.filter(Boolean).length;
   $("inputSummary").textContent =
     `학생 ${d.students.length}명 · 문항 ${d.nItems}개 · 분석 포함 ${included}문항 · 총점 만점 ${included}점`;
-
   let html = "<tr><th>No</th><th>ID</th>";
   for (let j = 0; j < d.nItems; j++) html += `<th>${j + 1}</th>`;
   html += "</tr>";
@@ -291,7 +261,6 @@ function renderInput() {
   });
   $("inputTable").innerHTML = html;
 }
-
 function renderScores() {
   const st = currentResult.stats;
   const r = currentResult;
@@ -301,7 +270,6 @@ function renderScores() {
     `평균난이도 ${st.meanDifficulty.toFixed(3)} · 평균변별도 ${st.meanDiscrimination.toFixed(3)} · ` +
     `Cronbach α ${st.reliability.toFixed(3)} · 측정오차 ${st.sem.toFixed(3)} · ` +
     `상위 27% ${r.upper.n}명(${r.upper.min}~${r.upper.max}점) · 하위 27% ${r.lower.n}명(${r.lower.min}~${r.lower.max}점)`;
-
   let html = "<tr><th>순위</th><th>ID</th><th>점수</th><th>백분율(%)</th><th>정답 문항수</th></tr>";
   [...currentResult.students].sort((a, b) => a.rank - b.rank).forEach(s => {
     html += `<tr><td>${s.rank}</td><td>${s.id}</td><td>${s.raw}</td>` +
@@ -309,14 +277,12 @@ function renderScores() {
   });
   $("scoreTable").innerHTML = html;
 }
-
 function renderItems() {
   const mode = $("itemSort").value;
   let items = [...currentResult.items];
   if (mode === "diffAsc") items.sort((a, b) => a.difficulty - b.difficulty);
   else if (mode === "diffDesc") items.sort((a, b) => b.difficulty - a.difficulty);
   else if (mode === "discDesc") items.sort((a, b) => b.discrimination - a.discrimination);
-
   let html = "<tr><th>문항</th><th>정답</th><th>정답자</th><th>무응답</th>" +
     "<th>난이도(p)</th><th>문항상관계수</th><th>상위 정답률</th><th>하위 정답률</th><th>변별도(D)</th><th>제외 시 α</th></tr>";
   items.forEach(it => {
@@ -329,20 +295,17 @@ function renderItems() {
   });
   $("itemTable").innerHTML = html;
 }
-
 function renderOptionSelect() {
   const sel = $("optionItem");
   sel.innerHTML = currentResult.items.map(it =>
     `<option value="${it.index - 1}">${it.index}번</option>`).join("");
 }
-
 function renderOptions() {
   const idx = Number($("optionItem").value) || 0;
   const it = currentResult.items[idx];
   if (!it) return;
   $("optionSummary").textContent =
     `${it.index}번 문항 · 정답 ${it.key} · 난이도 ${(it.difficulty * 100).toFixed(1)}% · 변별도 ${it.discrimination.toFixed(2)}`;
-
   let html = "<tr><th>답지</th><th>정답</th><th>응답비율 전체</th><th>상위 27%</th>" +
     "<th>하위 27%</th><th>답지-총점 상관계수</th><th>비고</th></tr>";
   it.options.forEach(o => {
@@ -356,9 +319,8 @@ function renderOptions() {
   });
   $("optionTable").innerHTML = html;
 }
-
 function renderChart() {
-  // 고해상도 렌더링: CSS 크기 × devicePixelRatio로 백퍼픽셀 확보
+
   const canvas = $("chart");
   const dpr = window.devicePixelRatio || 1;
   const w = Math.max(320, canvas.getBoundingClientRect().width || 900);
@@ -371,7 +333,6 @@ function renderChart() {
   ctx.clearRect(0, 0, w, h);
   ctx.lineWidth = 1;
   const mode = $("graphMode").value;
-
   let labels, values;
   if (mode === "score" || mode === "cum") {
     const st = currentResult.stats;
@@ -390,18 +351,15 @@ function renderChart() {
     values = currentResult.items.map(it =>
       mode === "diff" ? it.difficulty * 100 : it.discrimination);
   }
-
   const pad = 50, bw = Math.max(2, (w - pad * 2) / values.length - 4);
   const maxV = Math.max(...values, 0.001);
   const title = mode === "diff" ? "문항 난이도 (정답률 %)" :
     mode === "disc" ? "문항 변별도 (D)" :
     mode === "score" ? "검사점수의 도수 (선 그래프)" : "검사점수의 누가 백분율 (선 그래프)";
   const asLine = mode === "score" || mode === "cum";
-
   ctx.fillStyle = "#1f2937";
   ctx.font = "13px sans-serif";
   ctx.fillText(title, pad, 20);
-
   if (asLine) {
     ctx.strokeStyle = "#2563eb";
     ctx.lineWidth = 1.5;
@@ -434,14 +392,12 @@ function renderChart() {
       }
     });
   }
-
   ctx.strokeStyle = "#d9dde3";
   ctx.beginPath();
   ctx.moveTo(pad, h - pad);
   ctx.lineTo(w - pad / 2, h - pad);
   ctx.stroke();
 }
-
 function renderGraphTable() {
   if (!currentResult) { $("graphTable").innerHTML = ""; return; }
   const st = currentResult.stats;
