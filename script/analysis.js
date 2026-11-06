@@ -7,7 +7,7 @@
  * @returns {object} 학생별 점수, 문항별 통계, 상·하위 집단, 전체 통계
  */
 const analyze = (data) => {
-  const { nItems, key, weights, scored, students } = data;
+  const { nItems, key, weights, scored, students, numOptions } = data;
   const N = students.length;
   if (!N) throw new Error("분석할 학생 데이터가 없습니다.");
 
@@ -35,23 +35,24 @@ const analyze = (data) => {
   for (const s of students) {
     let Y = 0;
     let nCorrect = 0;
-    s.correct = new Uint8Array(nItems);
+    const resp = s.resp;
+    const correct = (s.correct = new Uint8Array(nItems));
     for (let j = 0; j < nItems; j++) {
-      const resp = s.resp[j];
-      const hit = scored[j] && resp !== " " && resp === key[j];
+      const r = resp[j];
+      const hit = scored[j] && r !== " " && r === key[j];
       if (hit) {
         Y += weights[j];
         nCorrect++;
-        s.correct[j] = 1;
+        correct[j] = 1;
       }
       if (scored[j]) {
         if (hit) R[j]++;
-        if (resp !== " ") A[j]++;
+        if (r !== " ") A[j]++;
         const x = hit ? weights[j] : 0;
         sX[j] += x;
         sX2[j] += x * x;
       }
-      const o = resp === " " ? "기타" : resp;
+      const o = r === " " ? "기타" : r;
       let a = opts[j].get(o);
       if (!a) {
         a = { option: o, count: 0, sumY: 0, upper: 0, lower: 0 };
@@ -111,7 +112,8 @@ const analyze = (data) => {
       if (s.raw > maxL) maxL = s.raw;
     }
     for (let j = 0; j < nItems; j++) {
-      const o = opts[j].get(s.resp[j] === " " ? "기타" : s.resp[j]);
+      const r = s.resp[j];
+      const o = opts[j].get(r === " " ? "기타" : r);
       o.sumY += s.raw;
       if (u) {
         o.upper++;
@@ -135,7 +137,7 @@ const analyze = (data) => {
   let sumSi2 = 0; // 채점 문항 분산의 합 (α용)
   for (let j = 0; j < nItems; j++) {
     const P = R[j] / N; // 난이도 p = R/N
-    const Q = data.numOptions[j] || 0;
+    const Q = numOptions[j] || 0;
     const it = {
       index: j + 1,
       key: key[j],
