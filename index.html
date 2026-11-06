@@ -95,34 +95,21 @@
     <h2>새 응답자료 만들기</h2>
     <div class="wiz-step">
       <label>문항 수 (1~200): <input type="number" id="newItems" min="1" max="200" value="10"></label>
-      <label>ID 캐릿 수 (1~99): <input type="number" id="newIdw" min="1" max="99" value="4"></label>
+      <label>ID 칸 수 (1~99): <input type="number" id="newIdw" min="1" max="99" value="4"></label>
       <button id="newBuild" class="btn">입력</button>
     </div>
     <div id="wizBody" hidden>
-      <div class="wiz-layout">
-        <div class="wiz-editor">
-          <div class="controls">
-            <button id="wizPrev" class="btn" title="이전 문항">&lt;</button>
-            <span id="wizItemLabel" class="wiz-item-label">문항 1</span>
-            <button id="wizNext" class="btn" title="다음 문항">&gt;</button>
-          </div>
-          <div class="wiz-fields">
-            <label>정답: <input type="text" id="wizKey" maxlength="1" value="1"></label>
-            <label>답지 수: <input type="number" id="wizOpt" min="2" max="9" value="4"></label>
-            <label>분석 포함 여부: <input type="text" id="wizFlag" maxlength="1" value="y"></label>
-          </div>
-          <p class="summary">값을 입력하고 Enter를 누르면 다음 문항으로 이동합니다.</p>
-        </div>
-        <div class="wiz-table table-wrap">
-          <table class="data-table" id="newTable"></table>
-        </div>
-      </div>
-      <div class="controls wiz-footer">
-        <button id="newGenerate" class="btn accent">확인</button>
-        <button id="newCancel" class="btn">취소</button>
-      </div>
-    </div>
+  <p class="summary">표의 각 칸에 정답·답지 수·분석 포함 여부를 직접 입력하세요.
+  <strong>Enter</strong>는 아래 칸으로, <strong>Tab</strong>은 오른쪽 칸으로 이동합니다(엑셀과 같은 방식).</p>
+  <div class="wiz-table table-wrap">
+    <table class="data-table" id="newTable"></table>
   </div>
+  <div class="controls wiz-footer">
+    <button id="newGenerate" class="btn accent">확인</button>
+    <button id="newCancel" class="btn">취소</button>
+  </div>
+</div>
+</div>
 </div>
 
 <div id="editModal" class="modal" hidden>

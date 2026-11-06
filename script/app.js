@@ -9,14 +9,8 @@ $("loadDemo").addEventListener("click", loadDemo);
 $("newData").addEventListener("click", openNewModal);
 $("newBuild").addEventListener("click", wizApplyCount);
 $("newGenerate").addEventListener("click", wizConfirm);
-$("wizPrev").addEventListener("click", () => wizNav(-1));
-$("wizNext").addEventListener("click", () => wizNav(1));
-["wizKey", "wizOpt", "wizFlag"].forEach(id => {
-  $(id).addEventListener("keydown", e => {
-    if (e.key === "Enter") { e.preventDefault(); wizNav(1); }
-  });
-  $(id).addEventListener("input", () => wizSaveCurrent());
-});
+$("newTable").addEventListener("keydown", e => gridKeyNav(e, "newTable"));
+$("editTable").addEventListener("keydown", e => gridKeyNav(e, "editTable"));
 $("importDat").addEventListener("click", () => $("datFile").click());
 $("datFile").addEventListener("change", e => {
   const file = e.target.files[0];
@@ -89,9 +83,9 @@ function run() {
   renderGraphTable();
 }
 
-// 새 응답자료 만들기 — 매뉴얼의 원본 폼과 동일한 구조:
-// 문항 수·ID 캐릿 수 입력 → 문항별 정답/답지 수/분석 포함 여부를
-// 현재 문항 필드(< > 탐색, Enter로 다음)에서 입력하고 우측 표에 반영 → 확인 → 표 편집기로 이어짐
+// 새 응답자료 만들기 — 매뉴얼 폼을 엑셀식으로 현대화:
+// 문항 수·ID 칸 수 입력 → 표의 각 칸(정답/답지 수/분석 포함)을 직접 입력하고
+// Enter(아래 칸)·Tab(오른쪽 칸)으로 이동 → 확인 → 표 편집기로 이어짐
 let wiz = null;
 
 function openNewModal() {
@@ -104,54 +98,54 @@ function wizApplyCount() {
   const idw = Math.max(1, Math.min(99, Number($("newIdw").value) || 4));
   $("newItems").value = n;
   $("newIdw").value = idw;
-  wiz = { n, idw, keys: new Array(n).fill("1"), opts: new Array(n).fill("4"), flags: new Array(n).fill("y"), cur: 0 };
+  wiz = { n, idw };
   $("wizBody").hidden = false;
-  wizShowItem();
-}
-
-function wizShowItem() {
-  $("wizItemLabel").textContent = `문항 ${wiz.cur + 1} / ${wiz.n}`;
-  $("wizKey").value = wiz.keys[wiz.cur];
-  $("wizOpt").value = wiz.opts[wiz.cur];
-  $("wizFlag").value = wiz.flags[wiz.cur];
   renderWizTable();
-}
-
-function wizSaveCurrent() {
-  if (!wiz) return;
-  wiz.keys[wiz.cur] = ($("wizKey").value.trim() || "1").slice(0, 1);
-  wiz.opts[wiz.cur] = String($("wizOpt").value.trim() || "4");
-  wiz.flags[wiz.cur] = ($("wizFlag").value.trim() || "y").toLowerCase().slice(0, 1) === "n" ? "n" : "y";
-  renderWizTable();
-}
-
-function wizNav(delta) {
-  if (!wiz) return;
-  wizSaveCurrent();
-  wiz.cur = Math.min(wiz.n - 1, Math.max(0, wiz.cur + delta));
-  wizShowItem();
 }
 
 function renderWizTable() {
-  let html = "<tr><th>문항 번호</th><th>정답</th><th>답지 수</th><th>분석 포함 여부</th></tr>";
+  let html = "<tr><th>문항 번호</th><th>정답</th><th>답지 수</th><th>분석 포함 여부 (y/n)</th></tr>";
   for (let i = 0; i < wiz.n; i++) {
-    const cls = i === wiz.cur ? ' class="wiz-active"' : "";
-    html += `<tr${cls}><td>${i + 1}</td><td>${wiz.keys[i]}</td><td>${wiz.opts[i]}</td><td>${wiz.flags[i]}</td></tr>`;
+    html += `<tr><td>${i + 1}</td>` +
+      `<td><input type="text" maxlength="1" value="1" data-row="${i}" data-col="key" class="grid-input"></td>` +
+      `<td><input type="number" min="2" max="9" value="4" data-row="${i}" data-col="opt" class="grid-input"></td>` +
+      `<td><input type="text" maxlength="1" value="y" data-row="${i}" data-col="flag" class="grid-input"></td></tr>`;
   }
   $("newTable").innerHTML = html;
 }
 
 function wizConfirm() {
-  wizSaveCurrent();
+  const keys = [], opts = [], flags = [];
+  for (let i = 0; i < wiz.n; i++) {
+    const key = $(`newTable`).querySelector(`[data-row="${i}"][data-col="key"]`);
+    const opt = $(`newTable`).querySelector(`[data-row="${i}"][data-col="opt"]`);
+    const flag = $(`newTable`).querySelector(`[data-row="${i}"][data-col="flag"]`);
+    keys.push((key.value.trim() || "1").slice(0, 1));
+    opts.push(parseInt(opt.value, 10) || 4);
+    flags.push((flag.value.trim() || "y").toLowerCase() === "n" ? "n" : "y");
+  }
   openEditModal({
     nItems: wiz.n,
-    key: wiz.keys,
-    numOptions: wiz.opts.map(o => parseInt(o, 10) || 0),
-    scored: wiz.flags.map(f => f !== "n"),
+    key: keys,
+    numOptions: opts,
+    scored: flags.map(f => f !== "n"),
     students: []
   });
   $("newModal").hidden = true;
   setStatus("문항 정보가 입력되었습니다. 학생 응답 행을 추가해 채운 뒤 적용하세요.", "");
+}
+
+// 엑셀식 키 탐색: Enter/↓=같은 열의 아래 칸, ↑=같은 열의 위 칸
+// (Tab/Shift+Tab은 브라우저 기본 동작으로 좌우 이동)
+function gridKeyNav(e, tableId) {
+  if (!["Enter", "ArrowDown", "ArrowUp"].includes(e.key)) return;
+  const input = e.target;
+  if (input.tagName !== "INPUT" || input.dataset.row === undefined) return;
+  e.preventDefault();
+  const nextRow = Number(input.dataset.row) + (e.key === "ArrowUp" ? -1 : 1);
+  const target = $(tableId).querySelector(
+    `input[data-row="${nextRow}"][data-col="${input.dataset.col}"]`);
+  if (target) target.focus();
 }
 
 // ---------- 데이터 편집 (표 형태) ----------
