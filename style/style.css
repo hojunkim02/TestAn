@@ -25,9 +25,46 @@
   --radius-m: 8px; /* borderRadiusLarge (surfaces) */
   --success: #0f7b0f;
   --error: #c42b1c; /* colorPaletteRedForeground1 */
+  --success-tint: rgba(15, 123, 15, 0.08);
+  --error-tint: rgba(196, 43, 28, 0.08);
+  --stroke-strong-hover: #b1b1b1;
+  --scrim: rgba(0, 0, 0, 0.3);
+  --tip-bg: rgba(36, 36, 36, 0.94);
   --duration-1: 100ms;
   --duration-2: 150ms;
   --curve-decel: cubic-bezier(0, 0, 0, 1); /* Fluent decelerate curve */
+}
+/* Fluent 2 dark theme tokens */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --accent: #115ea3; /* colorBrandBackground (dark) */
+  --accent-hover: #0f6cbd;
+  --accent-active: #0c3b5e;
+  --accent-text: #ffffff;
+  --accent-tint: rgba(76, 149, 255, 0.1);
+  --text: #ffffff;
+  --text-secondary: #d6d6d6;
+  --text-tertiary: #adadad;
+  --text-disabled: #6b6b6b;
+  --stroke: #333333;
+  --stroke-strong: #404040;
+  --stroke-strong-hover: #707070;
+  --stroke-card: rgba(255, 255, 255, 0.08);
+  --mica: #1f1f1f;
+  --card: rgba(41, 41, 41, 0.8);
+  --card-solid: #292929;
+  --card-hover: #333333;
+  --card-pressed: #3d3d3d;
+  --acrylic: rgba(32, 32, 32, 0.85);
+  --success: #6ccb5f;
+  --error: #ff99a4;
+  --success-tint: rgba(108, 203, 95, 0.1);
+  --error-tint: rgba(255, 153, 164, 0.1);
+  --scrim: rgba(0, 0, 0, 0.5);
+  --tip-bg: rgba(41, 41, 41, 0.95);
+}
+:root[data-theme="light"] {
+  color-scheme: light;
 }
 [hidden] {
   display: none !important;
@@ -136,12 +173,12 @@ main {
 }
 .btn:hover {
   background: var(--card-hover);
-  border-color: #b1b1b1; /* colorNeutralStroke1Hover */
+  border-color: var(--stroke-strong-hover); /* colorNeutralStroke1Hover */
 }
 .btn:active {
   background: var(--card-pressed);
   color: var(--accent-active);
-  border-color: #b1b1b1;
+  border-color: var(--stroke-strong-hover);
 }
 .btn:focus-visible {
   outline: 2px solid var(--text);
@@ -327,12 +364,12 @@ main {
 .status.error {
   color: var(--error);
   font-weight: 600;
-  background: rgba(196, 43, 28, 0.08);
+  background: var(--error-tint);
 }
 .status.ok {
   color: var(--success);
   font-weight: 600;
-  background: rgba(15, 123, 15, 0.08);
+  background: var(--success-tint);
 }
 /* Tabs — Fluent 2 underline pattern */
 .tabs {
@@ -475,7 +512,7 @@ textarea::placeholder {
 .modal {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--scrim);
   backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
@@ -663,7 +700,7 @@ footer {
 .chart-tip {
   position: fixed;
   z-index: 200;
-  background: rgba(36, 36, 36, 0.94);
+  background: var(--tip-bg);
   color: #fff;
   font-size: 12px;
   line-height: 16px;

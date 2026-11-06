@@ -297,6 +297,36 @@ const applyEdit = () => {
 /** HTML 속성 값에 안전하게 들어갈 문자열로 이스케이프한다. */
 const escAttr = (v) => String(v).replace(/"/g, "&quot;").replace(/</g, "&lt;");
 
+// ---------- 테마 (Fluent 2 light / dark) ----------
+
+const SUN_ICON =
+  '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8 4.75a3.25 3.25 0 1 0 0 6.5 3.25 3.25 0 0 0 0-6.5zM7.25 0h1.5v2h-1.5zM7.25 14h1.5v2h-1.5zM0 7.25h2v1.5H0zM14 7.25h2v1.5h-2zM2.22 1.16l1.06-1.06 1.42 1.42-1.07 1.06zM11.3 12.24l1.06-1.06 1.42 1.42-1.07 1.06zM12.48 2.58L11.42 1.16l1.42-1.42 1.06 1.06zM1.16 13.66L.1 12.24l1.42-1.42 1.06 1.06z"/></svg>';
+const MOON_ICON =
+  '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8.9 1.5a6.5 6.5 0 1 0 5.6 5.6.75.75 0 0 0-1.06-.86 5 5 0 0 1-6.2-6.2.75.75 0 0 0-.86-1.06 6.54 6.54 0 0 0-2.48 2.52z"/></svg>';
+
+/** 테마를 적용하고 저장한다. 차트가 있으면 새 팔레트로 다시 그린다. */
+const applyTheme = (theme) => {
+  document.documentElement.dataset.theme = theme;
+  localStorage.setItem("theme", theme);
+  $("themeBtn").innerHTML = theme === "dark" ? SUN_ICON : MOON_ICON;
+  $("themeBtn").title =
+    theme === "dark" ? "라이트 모드로 전환" : "다크 모드로 전환";
+  document
+    .querySelector('meta[name="theme-color"]')
+    .setAttribute("content", theme === "dark" ? "#1f1f1f" : "#0f6cbd");
+  if (currentResult) renderChart();
+};
+
+applyTheme(
+  localStorage.getItem("theme") ??
+    (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"),
+);
+$("themeBtn").addEventListener("click", () =>
+  applyTheme(
+    document.documentElement.dataset.theme === "dark" ? "light" : "dark",
+  ),
+);
+
 /** 텍스트를 파일로 내려받는다. */
 const downloadFile = (name, content, mime) => {
   const blob = new Blob([content], { type: mime });
@@ -460,6 +490,28 @@ const chartSeries = (mode) => {
   };
 };
 
+/** 현재 테마에 맞는 차트 팔레트를 반환한다. */
+const chartPalette = () =>
+  document.documentElement.dataset.theme === "dark"
+    ? {
+        brand: "#4cc2ff",
+        neg: "#ff99a4",
+        title: "#ffffff",
+        axis: "#adadad",
+        value: "#d6d6d6",
+        grid: "#404040",
+        axisLine: "#575757",
+      }
+    : {
+        brand: "#0f6cbd",
+        neg: "#c42b1c",
+        title: "#242424",
+        axis: "#616161",
+        value: "#424242",
+        grid: "#e0e0e0",
+        axisLine: "#d1d1d1",
+      };
+
 /** 캔버스에 난이도/변별도/도수/누가 그래프를 그린다. */
 const renderChart = () => {
   const canvas = $("chart");
@@ -470,6 +522,7 @@ const renderChart = () => {
   canvas.height = Math.round(h * dpr);
   canvas.style.height = h + "px";
   const ctx = canvas.getContext("2d");
+  const P = chartPalette();
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, w, h);
 
@@ -495,7 +548,7 @@ const renderChart = () => {
           ? "검사점수의 도수"
           : "검사점수의 누가 백분율 (%)";
 
-  ctx.fillStyle = "#242424";
+  ctx.fillStyle = P.title;
   ctx.font = "600 13px 'Segoe UI', sans-serif";
   ctx.fillText(title, padL, 18);
 
@@ -505,12 +558,12 @@ const renderChart = () => {
   for (let i = 0; i <= steps; i++) {
     const v = minV + ((maxV - minV) * i) / steps;
     const yy = y(v);
-    ctx.strokeStyle = i === 0 ? "#D1D1D1" : "#E0E0E0";
+    ctx.strokeStyle = i === 0 ? P.axisLine : P.grid;
     ctx.beginPath();
     ctx.moveTo(padL, yy);
     ctx.lineTo(w - padR, yy);
     ctx.stroke();
-    ctx.fillStyle = "#616161";
+    ctx.fillStyle = P.axis;
     ctx.textAlign = "right";
     ctx.fillText(fmt(v), padL - 6, yy + 3);
   }
@@ -518,7 +571,7 @@ const renderChart = () => {
 
   /** 데이터 포인트 위에 값을 표시한다. */
   const valText = (v, x, yy) => {
-    ctx.fillStyle = "#424242";
+    ctx.fillStyle = P.value;
     ctx.font = "600 10px 'Segoe UI', sans-serif";
     ctx.textAlign = "center";
     ctx.fillText(fmt(v), x, yy - 4);
@@ -531,7 +584,7 @@ const renderChart = () => {
     const px = (i) => padL + i * dx;
     const step = Math.max(1, Math.ceil(values.length / 20));
     const st = currentResult.stats;
-    ctx.strokeStyle = "#0F6CBD";
+    ctx.strokeStyle = P.brand;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     values.forEach((v, i) =>
@@ -550,11 +603,11 @@ const renderChart = () => {
       });
       ctx.beginPath();
       ctx.arc(px(i), y(v), 2.5, 0, Math.PI * 2);
-      ctx.fillStyle = "#0F6CBD";
+      ctx.fillStyle = P.brand;
       ctx.fill();
       if (i % step === 0) {
         valText(v, px(i), y(v));
-        ctx.fillStyle = "#616161";
+        ctx.fillStyle = P.axis;
         ctx.font = "10px 'Segoe UI', sans-serif";
         ctx.textAlign = "center";
         ctx.fillText(labels[i], px(i), h - padB + 14);
@@ -578,11 +631,11 @@ const renderChart = () => {
       });
       const yy = y(Math.max(v, 0));
       const bh = y(Math.min(v, 0)) - yy;
-      ctx.fillStyle = v < 0 ? "#C42B1C" : "#0F6CBD";
+      ctx.fillStyle = v < 0 ? P.neg : P.brand;
       ctx.fillRect(x, yy, bw, Math.max(bh, 1));
       if (values.length <= 40) {
         valText(v, x + bw / 2, yy);
-        ctx.fillStyle = "#616161";
+        ctx.fillStyle = P.axis;
         ctx.font = "10px 'Segoe UI', sans-serif";
         ctx.textAlign = "center";
         ctx.fillText(labels[i], x + bw / 2, h - padB + 14);
