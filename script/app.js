@@ -108,7 +108,7 @@ function renderWizTable() {
   for (let i = 0; i < wiz.n; i++) {
     html += `<tr><td>${i + 1}</td>` +
       `<td><input type="text" maxlength="1" value="1" data-row="${i}" data-col="key" class="grid-input"></td>` +
-      `<td><input type="number" min="2" max="9" value="4" data-row="${i}" data-col="opt" class="grid-input"></td>` +
+      `<td><input type="number" min="2" max="9" value="5" data-row="${i}" data-col="opt" class="grid-input"></td>` +
       `<td><input type="text" maxlength="1" value="y" data-row="${i}" data-col="flag" class="grid-input"></td></tr>`;
   }
   $("newTable").innerHTML = html;
@@ -121,7 +121,7 @@ function wizConfirm() {
     const opt = $(`newTable`).querySelector(`[data-row="${i}"][data-col="opt"]`);
     const flag = $(`newTable`).querySelector(`[data-row="${i}"][data-col="flag"]`);
     keys.push((key.value.trim() || "1").slice(0, 1));
-    opts.push(parseInt(opt.value, 10) || 4);
+    opts.push(parseInt(opt.value, 10) || 5);
     flags.push((flag.value.trim() || "y").toLowerCase() === "n" ? "n" : "y");
   }
   openEditModal({
@@ -140,11 +140,30 @@ function wizConfirm() {
 function gridKeyNav(e, tableId) {
   if (!["Enter", "ArrowDown", "ArrowUp"].includes(e.key)) return;
   const input = e.target;
-  if (input.tagName !== "INPUT" || input.dataset.row === undefined) return;
+  if (input.tagName !== "INPUT") return;
   e.preventDefault();
-  const nextRow = Number(input.dataset.row) + (e.key === "ArrowUp" ? -1 : 1);
-  const target = $(tableId).querySelector(
-    `input[data-row="${nextRow}"][data-col="${input.dataset.col}"]`);
+  const down = e.key !== "ArrowUp";
+  const col = input.dataset.col;
+  let target = null;
+  if (input.dataset.mrow !== undefined) {
+    const mrow = Number(input.dataset.mrow);
+    if (down) {
+      const nextMeta = $(tableId).querySelector(`input[data-mrow="${mrow + 1}"][data-col="${col}"]`);
+      target = nextMeta || $(tableId).querySelector(`input[data-row="0"][data-col="${col}"]`);
+    } else if (mrow > 0) {
+      target = $(tableId).querySelector(`input[data-mrow="${mrow - 1}"][data-col="${col}"]`);
+    }
+  } else if (input.dataset.row !== undefined) {
+    const row = Number(input.dataset.row);
+    if (down) {
+      target = $(tableId).querySelector(`input[data-row="${row + 1}"][data-col="${col}"]`);
+    } else if (row > 0) {
+      target = $(tableId).querySelector(`input[data-row="${row - 1}"][data-col="${col}"]`);
+    } else {
+      const metas = $(tableId).querySelectorAll(`input[data-mrow][data-col="${col}"]`);
+      target = metas[metas.length - 1] || null;
+    }
+  }
   if (target) target.focus();
 }
 
@@ -173,9 +192,9 @@ function renderEditGrid() {
   let html = "<tr><th>구분 / ID</th>";
   for (let j = 0; j < m.nItems; j++) html += `<th>${j + 1}</th>`;
   html += "<th></th></tr>";
-  html += metaRow("정답", m.key, j => `editKey${j}`);
-  html += metaRow("답지 수", m.numOptions.map(String), j => `editOpt${j}`);
-  html += metaRow("분석 포함", m.scored.map(s => s ? "y" : "n"), j => `editFlag${j}`);
+  html += metaRow("정답", m.key, j => `editKey${j}`, 0);
+  html += metaRow("답지 수", m.numOptions.map(String), j => `editOpt${j}`, 1);
+  html += metaRow("분석 포함", m.scored.map(s => s ? "y" : "n"), j => `editFlag${j}`, 2);
   m.students.forEach((s, i) => {
     html += `<tr><td class="left"><input type="text" class="grid-input grid-id" data-row="${i}" value="${escAttr(s.id)}"></td>`;
     for (let j = 0; j < m.nItems; j++) {
@@ -191,10 +210,10 @@ function renderEditGrid() {
     }));
 }
 
-function metaRow(label, values, idFn) {
+function metaRow(label, values, idFn, mrowIdx) {
   let html = `<tr><td class="left meta-label">${label}</td>`;
   values.forEach((v, j) => {
-    html += `<td><input type="text" maxlength="2" class="grid-input" id="${idFn(j)}" value="${escAttr(String(v))}"></td>`;
+    html += `<td><input type="text" maxlength="2" class="grid-input" id="${idFn(j)}" data-mrow="${mrowIdx}" data-col="${j}" value="${escAttr(String(v))}"></td>`;
   });
   return html + "<td></td></tr>";
 }
@@ -285,7 +304,7 @@ function renderScores() {
 
   let html = "<tr><th>순위</th><th>ID</th><th>점수</th><th>백분율(%)</th><th>정답 문항수</th></tr>";
   [...currentResult.students].sort((a, b) => a.rank - b.rank).forEach(s => {
-    html += `<tr><td>${s.rank}</td><td class="left">${s.id}</td><td>${s.raw}</td>` +
+    html += `<tr><td>${s.rank}</td><td>${s.id}</td><td>${s.raw}</td>` +
       `<td>${s.percent.toFixed(1)}</td><td>${s.correctCount}</td></tr>`;
   });
   $("scoreTable").innerHTML = html;
