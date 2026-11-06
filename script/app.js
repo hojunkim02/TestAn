@@ -46,7 +46,7 @@ const renderWizTable = () => {
   let html = "<tr><th>문항 번호</th><th>정답</th><th>답지 수</th><th>분석 포함 여부 (y/n)</th></tr>";
   for (let i = 0; i < wiz.n; i++) {
     html += `<tr><td>${i + 1}</td>` +
-      `<td><input type="text" maxlength="1" value="1" data-row="${i}" data-col="key" class="grid-input"></td>` +
+      `<td><input type="text" inputmode="numeric" maxlength="1" value="1" data-row="${i}" data-col="key" class="grid-input"></td>` +
       `<td><input type="number" min="2" max="9" value="5" data-row="${i}" data-col="opt" class="grid-input"></td>` +
       `<td><input type="text" maxlength="1" value="y" data-row="${i}" data-col="flag" class="grid-input"></td></tr>`;
   }
@@ -129,7 +129,7 @@ const renderEditGrid = () => {
   m.students.forEach((s, i) => {
     html += `<tr><td class="left"><input type="text" class="grid-input grid-id" data-row="${i}" value="${escAttr(s.id)}"></td>`;
     for (let j = 0; j < m.nItems; j++) {
-      html += `<td><input type="text" maxlength="1" class="grid-input" data-row="${i}" data-col="${j}" value="${escAttr(s.resp[j])}"></td>`;
+      html += `<td><input type="text" inputmode="numeric" maxlength="1" class="grid-input" data-row="${i}" data-col="${j}" value="${escAttr(s.resp[j])}"></td>`;
     }
     html += `<td><button class="btn row-del" data-row="${i}" title="행 삭제">✕</button></td></tr>`;
   });

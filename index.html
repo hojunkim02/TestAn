@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TestAn Web - 문항분석 도구</title>
 <link rel="stylesheet" href="style/style.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0067c0">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body>
 <header>
@@ -86,8 +90,8 @@
   <div class="modal-content modal-narrow">
     <h2>새 응답자료 만들기</h2>
     <div class="wiz-step">
-      <label>문항 수 (1~200): <input type="number" id="newItems" min="1" max="200" value="10"></label>
-      <label>ID 칸 수 (1~99): <input type="number" id="newIdw" min="1" max="99" value="4"></label>
+      <label>문항 수 (1~200): <input type="number" inputmode="numeric" id="newItems" min="1" max="200" value="10"></label>
+      <label>ID 칸 수 (1~99): <input type="number" inputmode="numeric" id="newIdw" min="1" max="99" value="4"></label>
       <button id="newBuild" class="btn">입력</button>
     </div>
     <div id="wizBody" hidden>
@@ -137,5 +141,10 @@
 <script src="script/data.js"></script>
 <script src="script/analysis.js"></script>
 <script src="script/app.js"></script>
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+</script>
 </body>
 </html>

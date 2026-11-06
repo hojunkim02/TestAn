@@ -1,0 +1,16 @@
+{
+  "name": "TestAn Web - 문항분석 도구",
+  "short_name": "TestAn",
+  "description": "고전적 문항분석(CTT) 도구 - 원본 TestAn 1.0의 웹 포팅",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f4f4f4",
+  "theme_color": "#0067c0",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
