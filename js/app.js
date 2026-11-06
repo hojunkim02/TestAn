@@ -2,26 +2,55 @@
 
 let currentData = null;
 let currentResult = null;
+let currentDatText = "";
+let newLinkText = null;
 
 const $ = id => document.getElementById(id);
 
 $("inputFile").addEventListener("change", e => handleFile(e, "input"));
 $("answerFile").addEventListener("change", e => handleFile(e, "answer"));
 $("loadDemo").addEventListener("click", loadDemo);
+$("editData").addEventListener("click", openEditModal);
+$("editApply").addEventListener("click", applyEdit);
+$("editCancel").addEventListener("click", () => $("editModal").hidden = true);
+$("newData").addEventListener("click", openNewModal);
+$("newBuild").addEventListener("click", buildNewItemTable);
+$("newGenerate").addEventListener("click", generateNewFile);
+$("newCancel").addEventListener("click", () => $("newModal").hidden = true);
+$("newLink").addEventListener("change", e => {
+  const f = e.target.files[0];
+  if (!f) { newLinkText = null; return; }
+  const r = new FileReader();
+  r.onload = () => { newLinkText = r.result; };
+  r.readAsText(f, "utf-8");
+});
+$("printBtn").addEventListener("click", () => window.print());
+$("aboutBtn").addEventListener("click", () => $("aboutModal").hidden = false);
+$("aboutClose").addEventListener("click", () => $("aboutModal").hidden = true);
+["optOut", "optScr", "optGrp", "optSrt", "srtMode"].forEach(id =>
+  $(id).addEventListener("change", refreshFileOptions));
 $("itemSort").addEventListener("change", () => renderItems());
-$("graphMode").addEventListener("change", () => renderChart());
+$("graphMode").addEventListener("change", () => { renderChart(); renderGraphTable(); });
+$("fileSelect").addEventListener("change", renderFileArea);
+$("fileDownload").addEventListener("click", () => {
+  const kind = $("fileSelect").value;
+  const name = kind === "srt" ? `result_${$("srtMode").value}.srt` : `result.${kind}`;
+  download(name, buildFile(kind));
+});
 $("downloadOut").addEventListener("click", () => download("result.out", buildOut()));
 $("downloadScr").addEventListener("click", () => download("result.scr", buildScr()));
-$("downloadSrt").addEventListener("click", () => download("result_diff.srt", buildSrt("diff")));
-$("downloadSrtDisc").addEventListener("click", () => download("result_disc.srt", buildSrt("disc")));
+$("downloadSrt").addEventListener("click", () =>
+  download(`result_${$("srtMode").value}.srt`, buildSrt($("srtMode").value)));
 
 document.querySelectorAll("#tabs button").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll("#tabs button").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
-    ["input", "score", "item", "option", "graph"].forEach(t => {
+    ["input", "score", "item", "option", "graph", "files"].forEach(t => {
       $("tab-" + t).hidden = t !== btn.dataset.tab;
     });
+    if (btn.dataset.tab === "files") renderFileArea();
+    if (btn.dataset.tab === "graph") { renderChart(); renderGraphTable(); }
   });
 });
 
@@ -41,6 +70,7 @@ function handleFile(e, kind) {
     try {
       if (kind === "input") {
         $("inputFileName").textContent = file.name;
+        currentDatText = reader.result;
         currentData = parseDat(reader.result);
         const ansFile = $("answerFile").files[0];
         if (ansFile) {
@@ -67,6 +97,7 @@ function loadDemo() {
     .then(text => {
       $("inputFileName").textContent = "input_test6.dat (샘플)";
       $("answerFileName").textContent = "없으면 데이터 파일의 정답키 사용";
+      currentDatText = text;
       currentData = parseDat(text);
       run();
     })
@@ -83,6 +114,148 @@ function run() {
   renderOptionSelect();
   renderOptions();
   renderChart();
+  renderGraphTable();
+  refreshFileOptions();
+  renderFileArea();
+}
+
+function openEditModal() {
+  if (!currentDatText) { setStatus("먼저 데이터를 불러오세요.", "error"); return; }
+  $("editArea").value = currentDatText;
+  $("editModal").hidden = false;
+}
+
+function applyEdit() {
+  const text = $("editArea").value;
+  try {
+    currentData = parseDat(text);
+    currentDatText = text;
+    $("editModal").hidden = true;
+    run();
+  } catch (err) {
+    alert("편집 내용을 적용할 수 없습니다:\n" + err.message);
+  }
+}
+
+function openNewModal() {
+  $("newModal").hidden = false;
+  buildNewItemTable();
+}
+
+function buildNewItemTable() {
+  const n = Math.max(1, Math.min(200, Number($("newItems").value) || 1));
+  $("newItems").value = n;
+  let html = "<tr><th>문항 번호</th><th>정답</th><th>답지 수</th><th>분석 포함 (y/n)</th></tr>";
+  for (let i = 1; i <= n; i++) {
+    html += `<tr><td>${i}</td>` +
+      `<td><input type="text" maxlength="1" value="1" data-col="key" data-idx="${i}" class="cell-input"></td>` +
+      `<td><input type="number" min="2" max="9" value="4" data-col="opt" data-idx="${i}" class="cell-input"></td>` +
+      `<td><input type="text" maxlength="1" value="y" data-col="flag" data-idx="${i}" class="cell-input"></td></tr>`;
+  }
+  $("newTable").innerHTML = html;
+}
+
+function generateNewFile() {
+  if (!newLinkText) {
+    alert("학생 응답이 들어있는 '연결할 파일'을 지정해주세요.\n(원본 TestAn과 동일하게, 새 자료파일은 항목 정보와 연결 파일을 합쳐 생성됩니다)");
+    return;
+  }
+  const n = Math.max(1, Math.min(200, Number($("newItems").value) || 1));
+  const idw = Math.max(1, Math.min(99, Number($("newIdw").value) || 4));
+  const cells = $("newTable").querySelectorAll(".cell-input");
+  if (cells.length < n * 3) { alert("먼저 '항목 표 만들기'를 눌러주세요."); return; }
+  const keys = new Array(n).fill("1"), opts = new Array(n).fill("4"), flags = new Array(n).fill("y");
+  cells.forEach(c => {
+    const i = Number(c.dataset.idx) - 1;
+    if (c.dataset.col === "key") keys[i] = (c.value.trim() || "1").slice(0, 1);
+    if (c.dataset.col === "opt") opts[i] = String(c.value.trim() || "4");
+    if (c.dataset.col === "flag") flags[i] = (c.value.trim() || "y").toLowerCase().slice(0, 1) === "n" ? "n" : "y";
+  });
+
+  // control line: 1-3열 문항수, 4-8열 공백, 9-10열 ID 캐릿수
+  const control = String(n).padStart(3, " ") + "     " + String(idw).padStart(2, " ");
+  let dat = control + "\r\n" + keys.join("") + "\r\n" + opts.join("") + "\r\n" + flags.join("") + "\r\n";
+
+  if (newLinkText) {
+    newLinkText.replace(/\r\n?/g, "\n").split("\n").filter(l => l.trim()).forEach(l => {
+      let id, resp;
+      if (l.length >= n && l.slice(l.length - n).trim() !== "") {
+        resp = l.slice(l.length - n);
+        id = l.slice(0, l.length - n).trim();
+      } else {
+        resp = l.replace(/\s+$/, "");
+        resp = resp.length >= n ? resp.slice(resp.length - n) : resp.padEnd(n, " ");
+        id = "";
+      }
+      dat += (id || "").padEnd(idw).slice(0, idw) + resp + "\r\n";
+    });
+  }
+
+  $("newModal").hidden = true;
+  try {
+    currentDatText = dat;
+    currentData = parseDat(dat);
+    $("inputFileName").textContent = "새로 생성한 자료파일";
+    run();
+    download("new_input.dat", dat);
+  } catch (err) {
+    alert("자료파일 생성 실패: " + err.message);
+  }
+}
+
+function refreshFileOptions() {
+  const mode = $("srtMode").value;
+  const sel = $("fileSelect");
+  [...sel.options].forEach(o => {
+    if (o.value === "out") o.hidden = !$("optOut").checked;
+    if (o.value === "scr") o.hidden = !$("optScr").checked;
+    if (o.value === "grp") o.hidden = !$("optGrp").checked;
+    if (o.value === "srt") o.hidden = !$("optSrt").checked;
+  });
+  if (sel.selectedOptions[0] && sel.selectedOptions[0].hidden) {
+    const first = [...sel.options].find(o => !o.hidden);
+    if (first) sel.value = first.value;
+  }
+  $("downloadOut").style.display = $("optOut").checked ? "" : "none";
+  $("downloadScr").style.display = $("optScr").checked ? "" : "none";
+  $("downloadSrt").style.display = $("optSrt").checked ? "" : "none";
+  const srtBtn = $("downloadSrt");
+  srtBtn.textContent = mode === "diff" ? "난이도 정렬 (.srt)" : "변별도 정렬 (.srt)";
+  if (currentResult) renderFileArea();
+}
+
+function buildFile(kind) {
+  if (kind === "out") return buildOut();
+  if (kind === "scr") return buildScr();
+  if (kind === "grp") return buildGrp();
+  return buildSrt($("srtMode").value);
+}
+
+function renderFileArea() {
+  if (!currentResult) { $("fileArea").value = ""; return; }
+  $("fileArea").value = buildFile($("fileSelect").value);
+}
+
+function buildGrp() {
+  const st = currentResult.stats;
+  const counts = {};
+  currentResult.students.forEach(s => { counts[s.raw] = (counts[s.raw] || 0) + 1; });
+  const scores = Object.keys(counts).map(Number).sort((a, b) => a - b);
+  const min = st.min, max = st.high;
+  let out = "검사 분석 프로그램 : TestAn Web\n";
+  out += "파일성격 : 검사 분석 결과의 그래프 파일\n\n";
+  out += `문항 수 : ${currentData.nItems} 개\n피험자 수 : ${st.n} 명\n\n`;
+  out += "검사점수의 백분율 표\n";
+  out += "점수  도수  백분율(x)  누가 도수  누가 백분율(x)\n";
+  let cum = 0;
+  for (let sc = min; sc <= max; sc++) {
+    const c = counts[sc] || 0;
+    cum += c;
+    const pct = st.n ? (c / st.n * 100) : 0;
+    const cumPct = st.n ? (cum / st.n * 100) : 0;
+    out += `${String(sc).padStart(4)} ${String(c).padStart(5)} ${pct.toFixed(2).padStart(8)} ${String(cum).padStart(8)} ${cumPct.toFixed(2).padStart(10)}\n`;
+  }
+  return out;
 }
 
 function renderInput() {
@@ -180,12 +353,19 @@ function renderChart() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   const mode = $("graphMode").value;
 
-  let labels, values;
-  if (mode === "score") {
+  let labels, values, cumValues = null;
+  if (mode === "score" || mode === "cum") {
+    const st = currentResult.stats;
     const counts = {};
     currentResult.students.forEach(s => { counts[s.raw] = (counts[s.raw] || 0) + 1; });
-    labels = Object.keys(counts).map(Number).sort((a, b) => a - b);
-    values = labels.map(l => counts[l]);
+    labels = [];
+    for (let sc = st.min; sc <= st.high; sc++) labels.push(sc);
+    if (mode === "score") {
+      values = labels.map(l => counts[l] || 0);
+    } else {
+      let cum = 0;
+      values = labels.map(l => { cum += counts[l] || 0; return st.n ? cum / st.n * 100 : 0; });
+    }
   } else {
     labels = currentResult.items.map(it => it.index);
     values = currentResult.items.map(it =>
@@ -196,29 +376,68 @@ function renderChart() {
   const pad = 50, bw = Math.max(2, (w - pad * 2) / values.length - 4);
   const maxV = Math.max(...values, 0.001);
   const title = mode === "diff" ? "문항 난이도 (정답률 %)" :
-    mode === "disc" ? "문항 변별도 (D)" : "점수 분포 (인원)";
+    mode === "disc" ? "문항 변별도 (D)" :
+    mode === "score" ? "검사점수의 도수 (선 그래프)" : "검사점수의 누가 백분율 (선 그래프)";
+  const asLine = mode === "score" || mode === "cum";
 
   ctx.fillStyle = "#1f2937";
   ctx.font = "13px sans-serif";
   ctx.fillText(title, pad, 20);
 
-  values.forEach((v, i) => {
-    const x = pad + i * ((w - pad * 2) / values.length) + 2;
-    const bh = (h - pad * 2) * (v / maxV);
-    ctx.fillStyle = mode === "disc" ? (v < 0 ? "#dc2626" : "#2563eb") : "#2563eb";
-    ctx.fillRect(x, h - pad - bh, bw, bh);
-    if (values.length <= 40) {
-      ctx.fillStyle = "#6b7280";
-      ctx.font = "10px sans-serif";
-      ctx.fillText(labels[i], x, h - pad + 14);
-    }
-  });
+  if (asLine) {
+    ctx.strokeStyle = "#2563eb";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    values.forEach((v, i) => {
+      const x = pad + i * ((w - pad * 2) / Math.max(1, values.length - 1));
+      const y = h - pad - (h - pad * 2) * (v / maxV);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.fillStyle = "#6b7280";
+    ctx.font = "10px sans-serif";
+    const step = Math.max(1, Math.ceil(values.length / 25));
+    values.forEach((v, i) => {
+      if (i % step === 0) {
+        const x = pad + i * ((w - pad * 2) / Math.max(1, values.length - 1));
+        ctx.fillText(labels[i], x - 6, h - pad + 14);
+      }
+    });
+  } else {
+    values.forEach((v, i) => {
+      const x = pad + i * ((w - pad * 2) / values.length) + 2;
+      const bh = (h - pad * 2) * (v / maxV);
+      ctx.fillStyle = mode === "disc" ? (v < 0 ? "#dc2626" : "#2563eb") : "#2563eb";
+      ctx.fillRect(x, h - pad - bh, bw, bh);
+      if (values.length <= 40) {
+        ctx.fillStyle = "#6b7280";
+        ctx.font = "10px sans-serif";
+        ctx.fillText(labels[i], x, h - pad + 14);
+      }
+    });
+  }
 
   ctx.strokeStyle = "#d9dde3";
   ctx.beginPath();
   ctx.moveTo(pad, h - pad);
   ctx.lineTo(w - pad / 2, h - pad);
   ctx.stroke();
+}
+
+function renderGraphTable() {
+  const st = currentResult.stats;
+  if (!currentResult) { $("graphTable").innerHTML = ""; return; }
+  const counts = {};
+  currentResult.students.forEach(s => { counts[s.raw] = (counts[s.raw] || 0) + 1; });
+  let html = "<tr><th>점수</th><th>피험자 수</th><th>백분율(x)</th><th>누가 피험자 수</th><th>누가 백분율(x)</th></tr>";
+  let cum = 0;
+  for (let sc = st.min; sc <= st.high; sc++) {
+    const c = counts[sc] || 0;
+    cum += c;
+    html += `<tr><td>${sc}</td><td>${c}</td><td>${(st.n ? c / st.n * 100 : 0).toFixed(2)}</td>` +
+      `<td>${cum}</td><td>${(st.n ? cum / st.n * 100 : 0).toFixed(2)}</td></tr>`;
+  }
+  $("graphTable").innerHTML = html;
 }
 
 function buildOut() {

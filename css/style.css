@@ -126,3 +126,67 @@ main { max-width: 1100px; margin: 0 auto; padding: 16px; }
 canvas { max-width: 100%; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; }
 
 footer { text-align: center; color: var(--muted); font-size: 0.75rem; padding: 24px; }
+
+.settings {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 12px;
+  font-size: 0.82rem;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.settings label { display: inline-flex; gap: 4px; align-items: center; cursor: pointer; }
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 16px;
+}
+
+.modal-content {
+  background: var(--panel);
+  border-radius: 8px;
+  padding: 20px;
+  max-width: 860px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: auto;
+}
+
+.modal-content h2 { margin-top: 0; font-size: 1.05rem; }
+
+textarea {
+  width: 100%;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 0.78rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+  box-sizing: border-box;
+  white-space: pre;
+  overflow: auto;
+}
+
+#tab-graph h3 { font-size: 0.9rem; margin: 14px 0 8px; }
+
+@media print {
+  header, footer, .panel, .tabs, .controls, .modal { display: none !important; }
+  .tab-content { display: block !important; }
+  main { max-width: none; padding: 0; }
+}
+
+.cell-input {
+  width: 60px;
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
