@@ -32,6 +32,27 @@
 [hidden] {
   display: none !important;
 }
+/* Thin scrollbars — Fluent 2 scrollbar style */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--stroke-strong) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--stroke-strong);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-tertiary);
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
 * {
   box-sizing: border-box;
 }
@@ -142,19 +163,55 @@ main {
   outline: 2px solid #fff;
   outline-offset: 1px;
 }
+/* Split buttons — Fluent 2 split button */
+.split-btn {
+  position: relative;
+  display: inline-flex;
+}
+.split-btn .btn {
+  margin: 0;
+}
+.split-btn .split-main {
+  border-radius: var(--radius-s) 0 0 var(--radius-s);
+  border-right: none;
+}
+.split-btn .split-chev {
+  border-radius: 0 var(--radius-s) var(--radius-s) 0;
+  min-width: 32px;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.split-btn .split-chev svg {
+  fill: var(--text);
+  transition: transform var(--duration-2) var(--curve-decel);
+}
+.split-btn .split-chev.open svg {
+  transform: rotate(180deg);
+}
+.split-btn .split-chev:hover svg {
+  fill: var(--accent-hover);
+}
+/* Icon button — Fluent 2 circular icon button */
+.icon-btn {
+  min-width: 32px;
+  width: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+.icon-btn svg {
+  fill: var(--text-secondary);
+}
+.icon-btn:hover svg {
+  fill: var(--accent-hover);
+}
 /* Dropdown menus — Fluent 2 menu flyout */
 .menu-wrap {
   position: relative;
-}
-.menu-btn .chev {
-  display: inline-block;
-  margin-left: 4px;
-  font-size: 10px;
-  color: var(--text-tertiary);
-  transition: transform var(--duration-2) var(--curve-decel);
-}
-.menu-btn.open .chev {
-  transform: rotate(180deg);
 }
 .menu {
   position: absolute;
@@ -254,19 +311,28 @@ main {
   background: var(--card-solid);
   border-bottom-color: var(--text);
 }
+/* Status — Fluent 2 message bar */
 .status {
-  margin-top: 10px;
+  margin-top: 12px;
+  padding: 8px 12px;
   font-size: 12px;
   line-height: 16px;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
+  background: var(--card-hover);
+  border-radius: var(--radius-s);
+}
+.status:empty {
+  display: none;
 }
 .status.error {
   color: var(--error);
   font-weight: 600;
+  background: rgba(196, 43, 28, 0.08);
 }
 .status.ok {
   color: var(--success);
   font-weight: 600;
+  background: rgba(15, 123, 15, 0.08);
 }
 /* Tabs — Fluent 2 underline pattern */
 .tabs {
@@ -432,14 +498,42 @@ textarea::placeholder {
   max-height: 90vh;
   overflow: auto;
 }
+.modal-content {
+  position: relative;
+}
 .modal-content h2 {
   margin: 0 0 8px;
+  padding-right: 36px;
   font-family:
     "Segoe UI Variable Display", "Segoe UI", "Malgun Gothic", system-ui,
     sans-serif;
-  font-size: 16px;
-  line-height: 22px;
+  font-size: 20px; /* Subtitle1 — Fluent dialog title */
+  line-height: 28px;
   font-weight: 600;
+}
+.dialog-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  appearance: none;
+  background: none;
+  border: none;
+  border-radius: var(--radius-s);
+  font-size: 13px;
+  line-height: 1;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--duration-1) var(--curve-decel);
+}
+.dialog-close:hover {
+  background: var(--card-hover);
+  color: var(--accent-hover);
+}
+.dialog-close:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 1px;
 }
 .modal-content p {
   margin: 6px 0 10px;

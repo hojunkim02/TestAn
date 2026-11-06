@@ -653,6 +653,11 @@ document.querySelectorAll(".modal").forEach((m) =>
     if (e.target === m) m.hidden = true;
   }),
 );
+document.querySelectorAll(".dialog-close").forEach((b) =>
+  b.addEventListener("click", () => {
+    b.closest(".modal").hidden = true;
+  }),
+);
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
     document
@@ -718,21 +723,29 @@ const importFile = async (file) => {
 // ---------- 드롭다운 메뉴 공통 동작 (Fluent menu 패턴) ----------
 
 const dropdowns = [
-  { btn: $("importBtn"), menu: $("importMenu") },
-  { btn: $("exportBtn"), menu: $("exportMenu") },
+  {
+    btns: [$("importBtn"), $("importChev")],
+    menu: $("importMenu"),
+  },
+  {
+    btns: [$("exportBtn"), $("exportChev")],
+    menu: $("exportMenu"),
+  },
 ];
 
-/** 메뉴 하나의 열림 상태와 버튼 표시(aria-expanded, 셰브론)를 함께 갱신한다. */
-const setMenuOpen = ({ btn, menu }, show) => {
+/** 메뉴 하나의 열림 상태와 스플릿 버튼 표시(aria-expanded, 셰브론 회전)를 갱신한다. */
+const setMenuOpen = ({ btns, menu }, show) => {
   menu.hidden = !show;
-  btn.setAttribute("aria-expanded", String(show));
-  btn.classList.toggle("open", show);
+  btns.forEach((btn) => {
+    btn.setAttribute("aria-expanded", String(show));
+    btn.classList.toggle("open", show);
+  });
 };
 
 /** 열려 있는 모든 드롭다운을 닫는다. */
 const closeMenus = () => dropdowns.forEach((d) => setMenuOpen(d, false));
 
-/** 버튼 클릭: 해당 메뉴만 토글하고, 열릴 때 첫 항목에 포커스를 준다. */
+/** 스플릿 버튼 클릭: 해당 메뉴만 토글하고, 열릴 때 첫 항목에 포커스를 준다. */
 const toggleMenu = (d) => {
   const show = d.menu.hidden;
   closeMenus();
@@ -741,13 +754,16 @@ const toggleMenu = (d) => {
     d.menu.querySelector(".menu-item")?.focus();
   }
 };
-dropdowns.forEach((d) => d.btn.addEventListener("click", () => toggleMenu(d)));
+dropdowns.forEach((d) =>
+  d.btns.forEach((btn) => btn.addEventListener("click", () => toggleMenu(d))),
+);
 
 // 바깥 클릭(터치 포함) 시 닫기 — pointerdown이라 드래그 후 놓아도 정확히 닫힌다
 document.addEventListener("pointerdown", (e) => {
   if (
     !dropdowns.some(
-      ({ btn, menu }) => btn.contains(e.target) || menu.contains(e.target),
+      ({ btns, menu }) =>
+        btns.some((btn) => btn.contains(e.target)) || menu.contains(e.target),
     )
   ) {
     closeMenus();

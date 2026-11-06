@@ -32,14 +32,25 @@
           <button id="loadDemo" class="btn accent">샘플 데이터로 보기</button>
           <button id="newData" class="btn">새 응답자료 만들기</button>
           <button id="editData" class="btn">데이터 편집</button>
-          <div class="menu-wrap">
+          <div class="split-btn menu-wrap">
+            <button id="importBtn" class="btn split-main">불러오기</button>
             <button
-              id="importBtn"
-              class="btn menu-btn"
+              id="importChev"
+              class="btn split-chev"
+              aria-label="불러오기 메뉴 열기"
               aria-haspopup="menu"
               aria-expanded="false"
             >
-              불러오기 <span class="chev">▾</span>
+              <svg
+                viewBox="0 0 16 16"
+                width="16"
+                height="16"
+                aria-hidden="true"
+              >
+                <path
+                  d="M3.2 5.7a.75.75 0 0 1 1.06-.04L8 9.1l3.74-3.44a.75.75 0 1 1 1.02 1.1l-4.25 4a.75.75 0 0 1-1.02 0l-4.25-4a.75.75 0 0 1-.04-1.06z"
+                />
+              </svg>
             </button>
             <div id="importMenu" class="menu" role="menu" hidden>
               <button class="menu-item" id="importCsv" role="menuitem">
@@ -51,14 +62,25 @@
             </div>
           </div>
           <input type="file" id="fileInput" accept=".csv,.dat,.txt" hidden />
-          <div class="menu-wrap">
+          <div class="split-btn menu-wrap">
+            <button id="exportBtn" class="btn split-main">내보내기</button>
             <button
-              id="exportBtn"
-              class="btn menu-btn"
+              id="exportChev"
+              class="btn split-chev"
+              aria-label="내보내기 메뉴 열기"
               aria-haspopup="menu"
               aria-expanded="false"
             >
-              내보내기 <span class="chev">▾</span>
+              <svg
+                viewBox="0 0 16 16"
+                width="16"
+                height="16"
+                aria-hidden="true"
+              >
+                <path
+                  d="M3.2 5.7a.75.75 0 0 1 1.06-.04L8 9.1l3.74-3.44a.75.75 0 1 1 1.02 1.1l-4.25 4a.75.75 0 0 1-1.02 0l-4.25-4a.75.75 0 0 1-.04-1.06z"
+                />
+              </svg>
             </button>
             <div id="exportMenu" class="menu" role="menu" hidden>
               <button class="menu-item" id="exportCsv" role="menuitem">
@@ -69,7 +91,21 @@
               </button>
             </div>
           </div>
-          <button id="aboutBtn" class="btn">정보</button>
+          <button
+            id="aboutBtn"
+            class="btn icon-btn"
+            aria-label="정보"
+            title="정보"
+          >
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+              <path
+                d="M8 1.75a6.25 6.25 0 1 0 0 12.5A6.25 6.25 0 0 0 8 1.75zM.25 8a7.75 7.75 0 1 1 15.5 0A7.75 7.75 0 0 1 .25 8z"
+              />
+              <path
+                d="M8.75 5.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0zM7.25 8a.75.75 0 0 1 1.5 0v3.25a.75.75 0 0 1-1.5 0z"
+              />
+            </svg>
+          </button>
         </div>
         <div id="status" class="status"></div>
       </section>
@@ -146,6 +182,7 @@
     </main>
     <div id="newModal" class="modal" hidden>
       <div class="modal-content modal-narrow">
+        <button class="dialog-close" aria-label="닫기">✕</button>
         <h2>새 응답자료 만들기</h2>
         <div class="wiz-step">
           <label
@@ -188,6 +225,7 @@
     </div>
     <div id="editModal" class="modal" hidden>
       <div class="modal-content modal-wide">
+        <button class="dialog-close" aria-label="닫기">✕</button>
         <h2>데이터 편집</h2>
         <p class="summary">
           정답·답지 수·분석 포함 여부와 학생 응답을 표에서 직접 수정합니다. 학생
@@ -209,6 +247,7 @@
     </div>
     <div id="aboutModal" class="modal" hidden>
       <div class="modal-content modal-narrow">
+        <button class="dialog-close" aria-label="닫기">✕</button>
         <h2>TestAn Web</h2>
         <p>고전검사이론(CTT)에 의한 검사 분석 프로그램</p>
         <p class="summary">
