@@ -9,40 +9,39 @@
 <body>
 <header>
   <h1>TestAn Web</h1>
-  <p class="subtitle">고전적 문항분석(CTT) 도구 · 원본: TestAn 1.0 for Windows (VB6, 2000)</p>
-</header>
+  <p class="subtitle">고전적 문항분석(CTT) 도구 · CSV / JSON / Excel 지원 · 원본: TestAn 1.0 for Windows (2000)</p>
+</head>
 
 <main>
   <section class="panel">
     <div class="file-row">
       <label class="file-box">
-        <strong>응답 데이터 (.dat)</strong>
-        <input type="file" id="inputFile" accept=".dat,.txt">
+        <strong>응답 데이터 (CSV · JSON · Excel)</strong>
+        <input type="file" id="inputFile" accept=".csv,.json,.xlsx,.xls">
         <span id="inputFileName">파일을 선택하세요</span>
       </label>
       <label class="file-box">
-        <strong>정답 데이터 (.dat, 선택)</strong>
-        <input type="file" id="answerFile" accept=".dat,.txt">
-        <span id="answerFileName">없으면 데이터 파일의 정답키 사용</span>
+        <strong>정답 데이터 (CSV · JSON, 선택)</strong>
+        <input type="file" id="answerFile" accept=".csv,.json,.xlsx,.xls">
+        <span id="answerFileName">없으면 응답 데이터의 KEY 행 사용</span>
       </label>
     </div>
     <div class="controls">
       <button id="loadDemo" class="btn">샘플 데이터로 보기</button>
-      <button id="editData" class="btn">데이터 편집</button>
+      <button id="editData" class="btn">데이터 편집 (JSON)</button>
       <button id="newData" class="btn">새 자료파일 생성</button>
       <button id="printBtn" class="btn">인쇄</button>
       <button id="aboutBtn" class="btn">정보</button>
     </div>
     <div class="settings">
       <strong>생성할 결과 파일:</strong>
-      <label><input type="checkbox" id="optOut" checked> 분석결과 (.out)</label>
-      <label><input type="checkbox" id="optScr" checked> 점수파일 (.scr)</label>
-      <label><input type="checkbox" id="optGrp" checked> 그래프파일 (.grp)</label>
-      <label><input type="checkbox" id="optSrt" checked> 정렬파일 (.srt)</label>
-      <label>정렬 기준:
+      <label><input type="checkbox" id="optScores" checked> 점수 CSV</label>
+      <label><input type="checkbox" id="optItems" checked> 문항 분석 CSV</label>
+      <label><input type="checkbox" id="optReport" checked> 전체 리포트 JSON</label>
+      <label>문항 정렬 기준:
         <select id="srtMode">
-          <option value="diff">문항 난이도 (_diff)</option>
-          <option value="disc">문항 변별도 (_disc)</option>
+          <option value="diff">난이도 (difficulty)</option>
+          <option value="disc">변별도 (discrimination)</option>
         </select>
       </label>
     </div>
@@ -81,9 +80,9 @@
           <option value="discDesc">변별도 내림차순</option>
         </select>
       </label>
-      <button id="downloadOut" class="btn">결과 파일 (.out)</button>
-      <button id="downloadScr" class="btn">점수 파일 (.scr)</button>
-      <button id="downloadSrt" class="btn">정렬 파일 (.srt)</button>
+      <button id="downloadScores" class="btn">점수 CSV</button>
+      <button id="downloadItems" class="btn">문항 분석 CSV</button>
+      <button id="downloadReport" class="btn">전체 리포트 JSON</button>
     </div>
     <div class="table-wrap"><table class="data-table" id="itemTable"></table></div>
   </section>
@@ -120,10 +119,9 @@
     <h2>결과 파일 보기</h2>
     <div class="controls">
       <select id="fileSelect">
-        <option value="out">검사 분석 결과 파일 (.out)</option>
-        <option value="scr">피험자별 득점표 파일 (.scr)</option>
-        <option value="grp">점수 분포 그래프 파일 (.grp)</option>
-        <option value="srt">내림차순 정렬 파일 (.srt)</option>
+        <option value="scores">점수 CSV (scores.csv)</option>
+        <option value="items">문항 분석 CSV (items.csv)</option>
+        <option value="report">전체 리포트 (report.json)</option>
       </select>
       <button id="fileDownload" class="btn">다운로드</button>
     </div>
@@ -133,8 +131,8 @@
 
 <div id="editModal" class="modal" hidden>
   <div class="modal-content">
-    <h2>데이터 편집</h2>
-    <p class="summary">응답자료 파일(.dat)을 직접 편집한 뒤 적용하면 다시 분석합니다.</p>
+    <h2>데이터 편집 (JSON)</h2>
+    <p class="summary">현재 데이터를 JSON으로 편집한 뒤 적용하면 다시 분석합니다. responses의 빈 문자열("")는 무응답입니다.</p>
     <textarea id="editArea" rows="18"></textarea>
     <div class="controls">
       <button id="editApply" class="btn">적용</button>
@@ -145,22 +143,21 @@
 
 <div id="newModal" class="modal" hidden>
   <div class="modal-content">
-    <h2>새 응답자료파일 생성</h2>
+    <h2>새 자료파일 생성</h2>
     <div class="controls">
       <label>문항 수 (1~200): <input type="number" id="newItems" min="1" max="200" value="10"></label>
-      <label>ID 캐릿수 (1~99): <input type="number" id="newIdw" min="1" max="99" value="4"></label>
       <button id="newBuild" class="btn">항목 표 만들기</button>
     </div>
     <div class="table-wrap"><table class="data-table" id="newTable"></table></div>
     <div class="controls">
       <label class="file-box">
-        <strong>연결할 파일 (학생 ID + 응답, 선택)</strong>
-        <input type="file" id="newLink" accept=".dat,.txt">
-        <span>학생 응답 원본 파일을 지정하면 자료파일에 합쳐집니다</span>
+        <strong>연결할 파일 (학생 응답 CSV, 필수)</strong>
+        <input type="file" id="newLink" accept=".csv,.json,.xlsx,.xls">
+        <span>헤더: id,q1,q2,... 형식의 학생 응답 파일</span>
       </label>
     </div>
     <div class="controls">
-      <button id="newGenerate" class="btn">자료파일 생성</button>
+      <button id="newGenerate" class="btn">자료파일 생성 (CSV)</button>
       <button id="newCancel" class="btn">취소</button>
     </div>
   </div>
@@ -172,7 +169,7 @@
     <p>고전검사이론(CTT)에 의한 검사 분석 프로그램</p>
     <p class="summary">원본: TestAn 1.0 for Windows (한글 Visual Basic 6.0, 2000)<br>
     이화여자대학교 교육학과 성태제 교수 저서 부록 프로그램 · 에버케이션</p>
-    <p class="summary">웹 포팅: 서버 없는 정적 웹 앱 · 모든 계산은 브라우저에서 수행 · GitHub Pages 배포</p>
+    <p class="summary">웹 포팅: 서버 없는 정적 웹 앱 · CSV/JSON/Excel 입력 · 모든 계산은 브라우저에서 수행</p>
     <button id="aboutClose" class="btn">닫기</button>
   </div>
 </div>
@@ -181,7 +178,8 @@
   <p>GitHub Pages로 배포되는 정적 웹 앱입니다. 모든 파싱·계산은 브라우저에서 수행됩니다.</p>
 </footer>
 
-<script src="js/parser.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="js/format.js"></script>
 <script src="js/analysis.js"></script>
 <script src="js/app.js"></script>
 </body>

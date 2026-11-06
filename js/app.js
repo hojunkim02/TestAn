@@ -2,7 +2,6 @@
 
 let currentData = null;
 let currentResult = null;
-let currentDatText = "";
 let newLinkText = null;
 
 const $ = id => document.getElementById(id);
@@ -20,27 +19,24 @@ $("newCancel").addEventListener("click", () => $("newModal").hidden = true);
 $("newLink").addEventListener("change", e => {
   const f = e.target.files[0];
   if (!f) { newLinkText = null; return; }
-  const r = new FileReader();
-  r.onload = () => { newLinkText = r.result; };
-  r.readAsText(f, "utf-8");
+  readFileText(f).then(text => { newLinkText = text; });
 });
 $("printBtn").addEventListener("click", () => window.print());
 $("aboutBtn").addEventListener("click", () => $("aboutModal").hidden = false);
 $("aboutClose").addEventListener("click", () => $("aboutModal").hidden = true);
-["optOut", "optScr", "optGrp", "optSrt", "srtMode"].forEach(id =>
+["optScores", "optItems", "optReport", "srtMode"].forEach(id =>
   $(id).addEventListener("change", refreshFileOptions));
 $("itemSort").addEventListener("change", () => renderItems());
 $("graphMode").addEventListener("change", () => { renderChart(); renderGraphTable(); });
 $("fileSelect").addEventListener("change", renderFileArea);
 $("fileDownload").addEventListener("click", () => {
   const kind = $("fileSelect").value;
-  const name = kind === "srt" ? `result_${$("srtMode").value}.srt` : `result.${kind}`;
+  const name = kind === "scores" ? "scores.csv" : kind === "items" ? "items.csv" : "report.json";
   download(name, buildFile(kind));
 });
-$("downloadOut").addEventListener("click", () => download("result.out", buildOut()));
-$("downloadScr").addEventListener("click", () => download("result.scr", buildScr()));
-$("downloadSrt").addEventListener("click", () =>
-  download(`result_${$("srtMode").value}.srt`, buildSrt($("srtMode").value)));
+$("downloadScores").addEventListener("click", () => download("scores.csv", buildScoresCsv(currentResult)));
+$("downloadItems").addEventListener("click", () => download("items.csv", buildItemsCsv(currentResult)));
+$("downloadReport").addEventListener("click", () => download("report.json", buildReportJson(currentData, currentResult)));
 
 document.querySelectorAll("#tabs button").forEach(btn => {
   btn.addEventListener("click", () => {
@@ -62,43 +58,63 @@ function setStatus(msg, cls) {
   el.className = "status " + (cls || "");
 }
 
+function readFileText(file) {
+  const name = file.name.toLowerCase();
+  if (name.endsWith(".xlsx") || name.endsWith(".xls")) {
+    if (typeof XLSX === "undefined") {
+      return Promise.reject(new Error("Excel 파일 지원은 xlsx 라이브러리 로드가 필요합니다. CSV 또는 JSON을 사용해 주세요."));
+    }
+    return file.arrayBuffer().then(buf => {
+      const wb = XLSX.read(buf, { type: "array" });
+      return XLSX.utils.sheet_to_csv(wb.Sheets[wb.SheetNames[0]]);
+    });
+  }
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onerror = () => reject(new Error("파일을 읽을 수 없습니다."));
+    r.onload = () => resolve(r.result);
+    r.readAsText(file, "utf-8");
+  });
+}
+
+function parseInputText(text) {
+  const t = text.trim();
+  if (t.startsWith("{") || t.startsWith("[")) return parseJson(text);
+  return parseResponsesCsv(text);
+}
+
 function handleFile(e, kind) {
   const file = e.target.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
+  readFileText(file)
+    .then(text => {
       if (kind === "input") {
         $("inputFileName").textContent = file.name;
-        currentDatText = reader.result;
-        currentData = parseDat(reader.result);
+        currentData = parseInputText(text);
         const ansFile = $("answerFile").files[0];
         if (ansFile) {
-          const r2 = new FileReader();
-          r2.onload = () => { try { applyKey(currentData, extractKey(r2.result)); run(); }
-            catch (err) { setStatus(err.message, "error"); } };
-          r2.readAsText(ansFile);
-        } else run();
+          return readFileText(ansFile).then(ansText => {
+            applyKeyData(currentData, ansText);
+            return null;
+          });
+        }
       } else {
         $("answerFileName").textContent = file.name;
-        if (currentData) { applyKey(currentData, extractKey(reader.result)); run(); }
-        else setStatus("응답 데이터를 먼저 선택하세요.", "error");
+        if (!currentData) throw new Error("응답 데이터를 먼저 선택하세요.");
+        applyKeyData(currentData, text);
       }
-    } catch (err) {
-      setStatus(err.message, "error");
-    }
-  };
-  reader.readAsText(file, "utf-8");
+    })
+    .then(() => run())
+    .catch(err => setStatus(err.message, "error"));
 }
 
 function loadDemo() {
-  fetch("Orgin/input_test6.dat")
+  fetch("sample-data/answer.csv")
     .then(r => { if (!r.ok) throw new Error("샘플 파일을 불러올 수 없습니다."); return r.text(); })
     .then(text => {
-      $("inputFileName").textContent = "input_test6.dat (샘플)";
-      $("answerFileName").textContent = "없으면 데이터 파일의 정답키 사용";
-      currentDatText = text;
-      currentData = parseDat(text);
+      $("inputFileName").textContent = "answer.csv (샘플)";
+      $("answerFileName").textContent = "없으면 응답 데이터의 KEY 행 사용";
+      currentData = parseResponsesCsv(text);
       run();
     })
     .catch(err => setStatus(err.message, "error"));
@@ -120,16 +136,14 @@ function run() {
 }
 
 function openEditModal() {
-  if (!currentDatText) { setStatus("먼저 데이터를 불러오세요.", "error"); return; }
-  $("editArea").value = currentDatText;
+  if (!currentData) { setStatus("먼저 데이터를 불러오세요.", "error"); return; }
+  $("editArea").value = buildDataJson(currentData);
   $("editModal").hidden = false;
 }
 
 function applyEdit() {
-  const text = $("editArea").value;
   try {
-    currentData = parseDat(text);
-    currentDatText = text;
+    currentData = parseJson($("editArea").value);
     $("editModal").hidden = true;
     run();
   } catch (err) {
@@ -157,11 +171,10 @@ function buildNewItemTable() {
 
 function generateNewFile() {
   if (!newLinkText) {
-    alert("학생 응답이 들어있는 '연결할 파일'을 지정해주세요.\n(원본 TestAn과 동일하게, 새 자료파일은 항목 정보와 연결 파일을 합쳐 생성됩니다)");
+    alert("학생 응답이 들어있는 '연결할 파일'을 지정해주세요.");
     return;
   }
   const n = Math.max(1, Math.min(200, Number($("newItems").value) || 1));
-  const idw = Math.max(1, Math.min(99, Number($("newIdw").value) || 4));
   const cells = $("newTable").querySelectorAll(".cell-input");
   if (cells.length < n * 3) { alert("먼저 '항목 표 만들기'를 눌러주세요."); return; }
   const keys = new Array(n).fill("1"), opts = new Array(n).fill("4"), flags = new Array(n).fill("y");
@@ -172,63 +185,53 @@ function generateNewFile() {
     if (c.dataset.col === "flag") flags[i] = (c.value.trim() || "y").toLowerCase().slice(0, 1) === "n" ? "n" : "y";
   });
 
-  // control line: 1-3열 문항수, 4-8열 공백, 9-10열 ID 캐릿수
-  const control = String(n).padStart(3, " ") + "     " + String(idw).padStart(2, " ");
-  let dat = control + "\r\n" + keys.join("") + "\r\n" + opts.join("") + "\r\n" + flags.join("") + "\r\n";
-
-  if (newLinkText) {
-    newLinkText.replace(/\r\n?/g, "\n").split("\n").filter(l => l.trim()).forEach(l => {
-      let id, resp;
-      if (l.length >= n && l.slice(l.length - n).trim() !== "") {
-        resp = l.slice(l.length - n);
-        id = l.slice(0, l.length - n).trim();
-      } else {
-        resp = l.replace(/\s+$/, "");
-        resp = resp.length >= n ? resp.slice(resp.length - n) : resp.padEnd(n, " ");
-        id = "";
-      }
-      dat += (id || "").padEnd(idw).slice(0, idw) + resp + "\r\n";
-    });
+  let linkData;
+  try { linkData = parseInputText(newLinkText); }
+  catch (err) { alert("연결 파일을 해석할 수 없습니다:\n" + err.message); return; }
+  if (linkData.nItems !== n) {
+    alert(`연결 파일의 문항 수(${linkData.nItems})가 생성할 문항 수(${n})와 다릅니다.`);
+    return;
   }
 
+  const rows = [["id", ...Array.from({ length: n }, (_, i) => "q" + (i + 1))]];
+  rows.push(["KEY", ...keys]);
+  rows.push(["OPTIONS", ...opts]);
+  rows.push(["INCLUDE", ...flags]);
+  linkData.students.forEach(s => rows.push([s.id, ...s.resp.map(c => c === " " ? "" : c)]));
+
+  const csv = toCsv(rows);
   $("newModal").hidden = true;
   try {
-    currentDatText = dat;
-    currentData = parseDat(dat);
+    currentData = parseResponsesCsv(csv);
     $("inputFileName").textContent = "새로 생성한 자료파일";
     run();
-    download("new_input.dat", dat);
+    download("new_responses.csv", csv);
   } catch (err) {
     alert("자료파일 생성 실패: " + err.message);
   }
 }
 
 function refreshFileOptions() {
-  const mode = $("srtMode").value;
   const sel = $("fileSelect");
   [...sel.options].forEach(o => {
-    if (o.value === "out") o.hidden = !$("optOut").checked;
-    if (o.value === "scr") o.hidden = !$("optScr").checked;
-    if (o.value === "grp") o.hidden = !$("optGrp").checked;
-    if (o.value === "srt") o.hidden = !$("optSrt").checked;
+    if (o.value === "scores") o.hidden = !$("optScores").checked;
+    if (o.value === "items") o.hidden = !$("optItems").checked;
+    if (o.value === "report") o.hidden = !$("optReport").checked;
   });
   if (sel.selectedOptions[0] && sel.selectedOptions[0].hidden) {
     const first = [...sel.options].find(o => !o.hidden);
     if (first) sel.value = first.value;
   }
-  $("downloadOut").style.display = $("optOut").checked ? "" : "none";
-  $("downloadScr").style.display = $("optScr").checked ? "" : "none";
-  $("downloadSrt").style.display = $("optSrt").checked ? "" : "none";
-  const srtBtn = $("downloadSrt");
-  srtBtn.textContent = mode === "diff" ? "난이도 정렬 (.srt)" : "변별도 정렬 (.srt)";
+  $("downloadScores").style.display = $("optScores").checked ? "" : "none";
+  $("downloadItems").style.display = $("optItems").checked ? "" : "none";
+  $("downloadReport").style.display = $("optReport").checked ? "" : "none";
   if (currentResult) renderFileArea();
 }
 
 function buildFile(kind) {
-  if (kind === "out") return buildOut();
-  if (kind === "scr") return buildScr();
-  if (kind === "grp") return buildGrp();
-  return buildSrt($("srtMode").value);
+  if (kind === "scores") return buildScoresCsv(currentResult);
+  if (kind === "items") return buildItemsCsv(currentResult);
+  return buildReportJson(currentData, currentResult);
 }
 
 function renderFileArea() {
@@ -236,43 +239,20 @@ function renderFileArea() {
   $("fileArea").value = buildFile($("fileSelect").value);
 }
 
-function buildGrp() {
-  const st = currentResult.stats;
-  const counts = {};
-  currentResult.students.forEach(s => { counts[s.raw] = (counts[s.raw] || 0) + 1; });
-  const scores = Object.keys(counts).map(Number).sort((a, b) => a - b);
-  const min = st.min, max = st.high;
-  let out = "검사 분석 프로그램 : TestAn Web\n";
-  out += "파일성격 : 검사 분석 결과의 그래프 파일\n\n";
-  out += `문항 수 : ${currentData.nItems} 개\n피험자 수 : ${st.n} 명\n\n`;
-  out += "검사점수의 백분율 표\n";
-  out += "점수  도수  백분율(x)  누가 도수  누가 백분율(x)\n";
-  let cum = 0;
-  for (let sc = min; sc <= max; sc++) {
-    const c = counts[sc] || 0;
-    cum += c;
-    const pct = st.n ? (c / st.n * 100) : 0;
-    const cumPct = st.n ? (cum / st.n * 100) : 0;
-    out += `${String(sc).padStart(4)} ${String(c).padStart(5)} ${pct.toFixed(2).padStart(8)} ${String(cum).padStart(8)} ${cumPct.toFixed(2).padStart(10)}\n`;
-  }
-  return out;
-}
-
 function renderInput() {
   const d = currentData;
+  const included = d.scored.filter(Boolean).length;
   $("inputSummary").textContent =
-    `학생 ${d.students.length}명 · 문항 ${d.nItems}개 · ` +
-    `채점 문항 ${d.scored.filter(Boolean).length}개 · 만점 ` +
-    d.weights.reduce((a, w, j) => a + (d.scored[j] ? w : 0), 0) + "점";
+    `학생 ${d.students.length}명 · 문항 ${d.nItems}개 · 분석 포함 ${included}문항 · 총점 만점 ${included}점`;
 
   let html = "<tr><th>No</th><th>ID</th>";
   for (let j = 0; j < d.nItems; j++) html += `<th>${j + 1}</th>`;
   html += "</tr>";
-  html += "<tr><td></td><td class=\"left\">정답키</td>" +
+  html += "<tr><td></td><td class=\"left\">정답 (KEY)</td>" +
     d.key.map(k => `<td>${k === " " ? "-" : k}</td>`).join("") + "</tr>";
-  html += "<tr><td></td><td class=\"left\">배점</td>" +
-    d.weights.map(w => `<td>${w}</td>`).join("") + "</tr>";
-  html += "<tr><td></td><td class=\"left\">채점</td>" +
+  html += "<tr><td></td><td class=\"left\">답지 수</td>" +
+    d.numOptions.map(o => `<td>${o || "-"}</td>`).join("") + "</tr>";
+  html += "<tr><td></td><td class=\"left\">분석 포함</td>" +
     d.scored.map(s => `<td>${s ? "y" : "n"}</td>`).join("") + "</tr>";
   d.students.forEach((s, i) => {
     html += `<tr><td>${i + 1}</td><td class="left">${s.id}</td>` +
@@ -291,7 +271,7 @@ function renderScores() {
     `Cronbach α ${st.reliability.toFixed(3)} · 측정오차 ${st.sem.toFixed(3)} · ` +
     `상위 27% ${r.upper.n}명(${r.upper.min}~${r.upper.max}점) · 하위 27% ${r.lower.n}명(${r.lower.min}~${r.lower.max}점)`;
 
-  let html = "<tr><th>순위</th><th>ID</th><th>점수</th><th>만점 대비(%)</th><th>정답 문항수</th></tr>";
+  let html = "<tr><th>순위</th><th>ID</th><th>점수</th><th>백분율(%)</th><th>정답 문항수</th></tr>";
   [...currentResult.students].sort((a, b) => a.rank - b.rank).forEach(s => {
     html += `<tr><td>${s.rank}</td><td class="left">${s.id}</td><td>${s.raw}</td>` +
       `<td>${s.percent.toFixed(1)}</td><td>${s.correctCount}</td></tr>`;
@@ -301,16 +281,19 @@ function renderScores() {
 
 function renderItems() {
   const mode = $("itemSort").value;
+  const sortMode = $("srtMode").value;
   let items = [...currentResult.items];
-  if (mode === "diffAsc") items.sort((a, b) => a.difficulty - b.difficulty);
+  if (mode === "index") {
+    if (sortMode === "disc") items.sort((a, b) => b.discrimination - a.discrimination);
+  } else if (mode === "diffAsc") items.sort((a, b) => a.difficulty - b.difficulty);
   else if (mode === "diffDesc") items.sort((a, b) => b.difficulty - a.difficulty);
   else if (mode === "discDesc") items.sort((a, b) => b.discrimination - a.discrimination);
 
-  let html = "<tr><th>문항</th><th>정답</th><th>배점</th><th>정답자</th><th>무응답</th>" +
+  let html = "<tr><th>문항</th><th>정답</th><th>정답자</th><th>무응답</th>" +
     "<th>난이도(p)</th><th>문항상관계수</th><th>상위 정답률</th><th>하위 정답률</th><th>변별도(D)</th><th>제외 시 α</th></tr>";
   items.forEach(it => {
     const negFlag = it.pointBiserial < 0 ? " ◀부정 변별문항" : "";
-    html += `<tr><td>${it.index}</td><td>${it.key === " " ? "-" : it.key}</td><td>${it.weight}</td>` +
+    html += `<tr><td>${it.index}</td><td>${it.key === " " ? "-" : it.key}</td>` +
       `<td>${it.correct}</td><td>${it.blank}</td><td>${(it.difficulty * 100).toFixed(1)}%</td>` +
       `<td>${it.pointBiserial.toFixed(2)}${negFlag}</td>` +
       `<td>${(it.pUpper * 100).toFixed(1)}%</td><td>${(it.pLower * 100).toFixed(1)}%</td>` +
@@ -353,7 +336,7 @@ function renderChart() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   const mode = $("graphMode").value;
 
-  let labels, values, cumValues = null;
+  let labels, values;
   if (mode === "score" || mode === "cum") {
     const st = currentResult.stats;
     const counts = {};
@@ -425,8 +408,8 @@ function renderChart() {
 }
 
 function renderGraphTable() {
-  const st = currentResult.stats;
   if (!currentResult) { $("graphTable").innerHTML = ""; return; }
+  const st = currentResult.stats;
   const counts = {};
   currentResult.students.forEach(s => { counts[s.raw] = (counts[s.raw] || 0) + 1; });
   let html = "<tr><th>점수</th><th>피험자 수</th><th>백분율(x)</th><th>누가 피험자 수</th><th>누가 백분율(x)</th></tr>";
@@ -440,63 +423,9 @@ function renderGraphTable() {
   $("graphTable").innerHTML = html;
 }
 
-function buildOut() {
-  const st = currentResult.stats;
-  const r = currentResult;
-  let out = "검사 분석 프로그램 : TestAn Web\n";
-  out += `파일성격 : 검사 분석 결과 파일\n\n`;
-  out += `문항 수 : ${currentData.nItems} 개\n피험자 수 : ${st.n} 명\n\n`;
-  out += "문항번호,문항난이도,문항상관계수,변별도,정답비율차,정답,무응답\n";
-  r.items.forEach(it => {
-    out += `${it.index},${it.difficulty.toFixed(2)},${it.pointBiserial.toFixed(2)},` +
-      `${it.discrimination.toFixed(2)},${(it.pUpper - it.pLower).toFixed(2)},` +
-      `${it.correct},${it.blank}\n`;
-  });
-  out += "\n[문항분석 결과]\n";
-  out += `문항 수 : ${currentData.nItems}\n`;
-  out += `평균난이도 : ${st.meanDifficulty.toFixed(3)}\n`;
-  out += `평균변별도 : ${st.meanDiscrimination.toFixed(3)}\n`;
-  out += `Alpha 값 : ${st.reliability.toFixed(3)}\n`;
-  out += `측정 오차 : ${st.sem.toFixed(3)}\n\n`;
-  out += "[검사점수 분석 결과]\n";
-  out += `피험자수 : ${st.n}\n평 균 : ${st.mean.toFixed(3)}\n`;
-  out += `표준편차 : ${st.sd.toFixed(3)}\n분 산 : ${st.variance.toFixed(3)}\n`;
-  out += `최저점수 : ${st.min}\n최고점수 : ${st.high}\n중앙값 : ${st.median}\n`;
-  out += `왜 도 : ${st.skewness.toFixed(3)}\n첨 도 : ${st.kurtosis.toFixed(3)}\n\n`;
-  out += `[상위 27% 집단] 피험자수 : ${r.upper.n}, 최저점수 : ${r.upper.min}\n`;
-  out += `[하위 27% 집단] 피험자수 : ${r.lower.n}, 최고점수 : ${r.lower.max}\n\n`;
-  out += "[해당문항을 제외한 검사의 신뢰도]\n";
-  r.items.forEach(it => {
-    out += `${it.index} ${it.alphaIfDeleted.toFixed(3)}\n`;
-  });
-  return out;
-}
-
-function buildScr() {
-  let out = `TestAn Web - 피험자별 득점표 파일\n\n【문항 수】${currentData.nItems} 개\n【피험자 수】${currentResult.stats.n} 명\n\n`;
-  out += "ID 번호  점수\n";
-  currentResult.students.forEach(s => {
-    out += `${s.id} ${s.raw}\n`;
-  });
-  return out;
-}
-
-function buildSrt(mode) {
-  const byDiff = mode !== "disc";
-  let out = byDiff ? "문항번호,문항난이도,변별도 (난이도 내림차순)\n"
-                   : "문항번호,변별도,난이도 (변별도 내림차순)\n";
-  const items = [...currentResult.items];
-  if (byDiff) items.sort((a, b) => b.difficulty - a.difficulty);
-  else items.sort((a, b) => b.discrimination - a.discrimination);
-  items.forEach(it => {
-    out += `${it.index},${byDiff ? it.difficulty.toFixed(2) : it.discrimination.toFixed(2)},` +
-      `${byDiff ? it.discrimination.toFixed(2) : it.difficulty.toFixed(2)}\n`;
-  });
-  return out;
-}
-
 function download(name, content) {
-  const blob = new Blob(["\uFEFF" + content], { type: "text/csv;charset=utf-8" });
+  const type = name.endsWith(".json") ? "application/json" : "text/csv;charset=utf-8";
+  const blob = new Blob(["\uFEFF" + content], { type });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = name;
