@@ -242,7 +242,8 @@ main { max-width: 1100px; margin: 0 auto; padding: 4px 16px 24px; }
 /* ---------- 캔버스 ---------- */
 
 canvas {
-  max-width: 100%;
+  width: 100%;
+  display: block;
   background: var(--card-solid);
   border: 1px solid var(--stroke);
   border-radius: var(--radius-m);
@@ -304,6 +305,11 @@ textarea::placeholder { color: var(--text-disabled); }
 .modal-content h2 { margin: 0 0 8px; font-size: 1.1rem; font-weight: 600; }
 
 .modal-narrow { max-width: 460px; }
+
+.cell-input {
+  width: 58px;
+  text-align: center;
+}
 
 /* ---------- 푸터 ---------- */
 

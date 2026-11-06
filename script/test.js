@@ -1,9 +1,9 @@
 "use strict";
 
-// 테스트: sample-data CSV 전체 분석 + 원본 매뉴얼 골든 수치 + CSV 왕복
+// 테스트: sample-data CSV 전체 분석 + 원본 매뉴얼 골든 수치 + CSV/.dat 왕복
 const fs = require("fs");
 const path = require("path");
-const { parseDataCsv, buildDataCsv } = require("./data.js");
+const { parseDataCsv, buildDataCsv, parseDatText, buildDatText } = require("./data.js");
 const { analyze } = require("./analysis.js");
 
 const dir = path.join(__dirname, "..", "sample-data");
@@ -74,6 +74,18 @@ const same = Math.abs(reResult.stats.mean - st.mean) < 1e-9 &&
   reResult.items.every((it, i) => it.difficulty === ansResult.items[i].difficulty);
 if (same) { console.log(`OK  CSV 왕복: 평균 ${reResult.stats.mean.toFixed(3)}, α ${reResult.stats.reliability.toFixed(3)} 동일`); pass++; }
 else { console.log("FAIL CSV 왕복 불일치"); fail++; }
+
+// .dat 왕복: data → .dat 텍스트 → parse → 같은 통계 (편집 화면·외부 파일 경로)
+const datText = buildDatText(ansData);
+const datData = parseDatText(datText);
+const datResult = analyze(datData);
+const datOk = Math.abs(round(datResult.stats.mean, 3) - 45.059) < 0.0005 &&
+  Math.abs(round(datResult.stats.reliability, 3) - 0.633) < 0.0005 &&
+  datResult.stats.n === 119 &&
+  Math.abs(round(datResult.items[0].alphaIfDeleted, 3) - 0.641) < 0.0005 &&
+  datData.students.every((s, i) => s.id === ansData.students[i].id);
+if (datOk) { console.log(`OK  .dat 왕복: 평균 ${datResult.stats.mean.toFixed(3)}, α ${datResult.stats.reliability.toFixed(3)} (골든 일치)`); pass++; }
+else { console.log("FAIL .dat 왕복 불일치"); fail++; }
 
 if (fail > 0) { console.error(`\n${fail}개 실패`); process.exit(1); }
 console.log(`\n모든 테스트 통과 (${pass}개, 골든 ${golden.length - goldenFail}/${golden.length})`);

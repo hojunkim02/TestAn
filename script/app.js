@@ -6,8 +6,30 @@ let currentResult = null;
 const $ = id => document.getElementById(id);
 
 $("loadDemo").addEventListener("click", loadDemo);
-$("newData").addEventListener("click", () => { $("newModal").hidden = false; });
+$("newData").addEventListener("click", openNewModal);
+$("newBuild").addEventListener("click", buildNewItemTable);
 $("newGenerate").addEventListener("click", generateScaffold);
+$("importDat").addEventListener("click", () => $("datFile").click());
+$("datFile").addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      currentData = parseDatText(reader.result);
+      run();
+    } catch (err) {
+      setStatus(".dat 파일을 읽을 수 없습니다: " + err.message, "error");
+    }
+  };
+  reader.onerror = () => setStatus(".dat 파일을 읽을 수 없습니다.", "error");
+  reader.readAsText(file, "latin1");
+  e.target.value = "";
+});
+$("exportDat").addEventListener("click", () => {
+  if (!currentData) { setStatus("내보낼 데이터가 없습니다.", "error"); return; }
+  downloadDat("responses.dat", buildDatText(currentData));
+});
 $("newCancel").addEventListener("click", () => $("newModal").hidden = true);
 $("editData").addEventListener("click", openEditModal);
 $("editApply").addEventListener("click", applyEdit);
@@ -58,31 +80,69 @@ function run() {
   renderGraphTable();
 }
 
-// 새 응답자료 만들기 — 원본처럼 문항 수 숫자 입력만으로 시작:
-// 기본 골격 CSV를 생성해 편집 화면으로 연결
-function generateScaffold() {
+// 새 응답자료 만들기 — 원본 프로그램과 동일한 방식:
+// 문항 수·ID 캐릿수 입력 → 문항별 정답/답지수/분석 포함 여부 표 → .dat 골격 생성 → 편집 화면
+function openNewModal() {
+  $("newModal").hidden = false;
+  buildNewItemTable();
+}
+
+function buildNewItemTable() {
   const n = Math.max(1, Math.min(200, Number($("newItems").value) || 1));
   $("newItems").value = n;
+  const idw = Math.max(1, Math.min(99, Number($("newIdw").value) || 4));
+  $("newIdw").value = idw;
+  let html = "<tr><th>문항 번호</th><th>정답</th><th>답지 수</th><th>분석 포함 (y/n)</th></tr>";
+  for (let i = 1; i <= n; i++) {
+    html += `<tr><td>${i}</td>` +
+      `<td><input type="text" maxlength="1" value="1" data-col="key" data-idx="${i}" class="cell-input"></td>` +
+      `<td><input type="number" min="2" max="9" value="4" data-col="opt" data-idx="${i}" class="cell-input"></td>` +
+      `<td><input type="text" maxlength="1" value="y" data-col="flag" data-idx="${i}" class="cell-input"></td></tr>`;
+  }
+  $("newTable").innerHTML = html;
+}
+
+function generateScaffold() {
+  const n = Math.max(1, Math.min(200, Number($("newItems").value) || 1));
+  const idw = Math.max(1, Math.min(99, Number($("newIdw").value) || 4));
+  const cells = $("newTable").querySelectorAll(".cell-input");
+  if (cells.length < n * 3) { alert("먼저 '항목 표 만들기'를 눌러주세요."); return; }
+  const keys = new Array(n).fill("1"), opts = new Array(n).fill("4"), flags = new Array(n).fill("y");
+  cells.forEach(c => {
+    const i = Number(c.dataset.idx) - 1;
+    if (c.dataset.col === "key") keys[i] = (c.value.trim() || "1").slice(0, 1);
+    if (c.dataset.col === "opt") opts[i] = String(c.value.trim() || "4");
+    if (c.dataset.col === "flag") flags[i] = (c.value.trim() || "y").toLowerCase().slice(0, 1) === "n" ? "n" : "y";
+  });
   $("newModal").hidden = true;
-  $("editArea").value = buildScaffoldCsv(n);
+  $("editArea").value = buildScaffoldDat(n, idw, keys, opts, flags);
   $("editModal").hidden = false;
-  setStatus("골격이 생성되었습니다. 정답(KEY)과 학생 행을 채운 뒤 적용하세요.", "");
+  setStatus("골격이 생성되었습니다. 학생 응답(ID 뒤에 응답)을 채운 뒤 적용하세요.", "");
 }
 
 function openEditModal() {
   if (!currentData) { setStatus("먼저 데이터를 불러오세요.", "error"); return; }
-  $("editArea").value = buildDataCsv(currentData);
+  $("editArea").value = buildDatText(currentData);
   $("editModal").hidden = false;
 }
 
 function applyEdit() {
   try {
-    currentData = parseDataCsv($("editArea").value);
+    currentData = parseDatText($("editArea").value);
     $("editModal").hidden = true;
     run();
   } catch (err) {
     alert("편집 내용을 적용할 수 없습니다:\n" + err.message);
   }
+}
+
+function downloadDat(name, content) {
+  const blob = new Blob([content], { type: "text/plain;charset=latin1" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 function renderInput() {
@@ -174,9 +234,18 @@ function renderOptions() {
 }
 
 function renderChart() {
+  // 고해상도 렌더링: CSS 크기 × devicePixelRatio로 백퍼픽셀 확보
   const canvas = $("chart");
+  const dpr = window.devicePixelRatio || 1;
+  const w = Math.max(320, canvas.getBoundingClientRect().width || 900);
+  const h = 400;
+  canvas.width = Math.round(w * dpr);
+  canvas.height = Math.round(h * dpr);
+  canvas.style.height = h + "px";
   const ctx = canvas.getContext("2d");
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+  ctx.lineWidth = 1;
   const mode = $("graphMode").value;
 
   let labels, values;
@@ -198,7 +267,6 @@ function renderChart() {
       mode === "diff" ? it.difficulty * 100 : it.discrimination);
   }
 
-  const w = canvas.width, h = canvas.height;
   const pad = 50, bw = Math.max(2, (w - pad * 2) / values.length - 4);
   const maxV = Math.max(...values, 0.001);
   const title = mode === "diff" ? "문항 난이도 (정답률 %)" :
@@ -212,7 +280,7 @@ function renderChart() {
 
   if (asLine) {
     ctx.strokeStyle = "#2563eb";
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
     values.forEach((v, i) => {
       const x = pad + i * ((w - pad * 2) / Math.max(1, values.length - 1));
