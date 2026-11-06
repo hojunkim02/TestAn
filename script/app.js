@@ -297,9 +297,9 @@ const applyEdit = () => {
 /** HTML 속성 값에 안전하게 들어갈 문자열로 이스케이프한다. */
 const escAttr = (v) => String(v).replace(/"/g, "&quot;").replace(/</g, "&lt;");
 
-/** 텍스트를 .dat 파일로 내려받는다. */
-const downloadDat = (name, content) => {
-  const blob = new Blob([content], { type: "text/plain;charset=latin1" });
+/** 텍스트를 파일로 내려받는다. */
+const downloadFile = (name, content, mime) => {
+  const blob = new Blob([content], { type: mime });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = name;
@@ -677,6 +677,34 @@ const digitOnly = (e) => {
 $("newTable").addEventListener("input", digitOnly);
 $("editTable").addEventListener("input", digitOnly);
 
+$("importCsv").addEventListener("click", () => $("csvFile").click());
+$("csvFile").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      currentData = parseDataCsv(reader.result);
+      run();
+    } catch (err) {
+      setStatus(".csv 파일을 읽을 수 없습니다: " + err.message, "error");
+    }
+  };
+  reader.onerror = () => setStatus(".csv 파일을 읽을 수 없습니다.", "error");
+  reader.readAsText(file, "utf-8");
+  e.target.value = "";
+});
+$("exportCsv").addEventListener("click", () => {
+  if (!currentData) {
+    setStatus("내보낼 데이터가 없습니다.", "error");
+    return;
+  }
+  downloadFile(
+    "responses.csv",
+    "\uFEFF" + buildDataCsv(currentData),
+    "text/csv;charset=utf-8",
+  );
+});
 $("importDat").addEventListener("click", () => $("datFile").click());
 $("datFile").addEventListener("change", (e) => {
   const file = e.target.files[0];
@@ -699,7 +727,11 @@ $("exportDat").addEventListener("click", () => {
     setStatus("내보낼 데이터가 없습니다.", "error");
     return;
   }
-  downloadDat("responses.dat", buildDatText(currentData));
+  downloadFile(
+    "responses.dat",
+    buildDatText(currentData),
+    "text/plain;charset=latin1",
+  );
 });
 $("newCancel").addEventListener("click", () => ($("newModal").hidden = true));
 $("editData").addEventListener("click", () => openEditModal(null));
