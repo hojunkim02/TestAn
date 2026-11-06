@@ -340,7 +340,6 @@ function renderOptions() {
   const idx = Number($("optionItem").value) || 0;
   const it = currentResult.items[idx];
   if (!it) return;
-  const keyProp = it.options.find(o => o.isKey);
   $("optionSummary").textContent =
     `${it.index}번 문항 · 정답 ${it.key} · 난이도 ${(it.difficulty * 100).toFixed(1)}% · 변별도 ${it.discrimination.toFixed(2)}`;
 
@@ -349,7 +348,7 @@ function renderOptions() {
   it.options.forEach(o => {
     let note = "";
     if (o.isKey) note = "*";
-    else if (keyProp && o.propAll > keyProp.propAll) note = "◀ 더 매력적임";
+    else if (o.attractive) note = "◀ 더 매력적임";
     html += `<tr><td>${o.option}</td><td>${o.isKey ? "*" : ""}</td>` +
       `<td>${(o.propAll * 100).toFixed(1)}%</td>` +
       `<td>${(o.propUpper * 100).toFixed(1)}%</td><td>${(o.propLower * 100).toFixed(1)}%</td>` +
