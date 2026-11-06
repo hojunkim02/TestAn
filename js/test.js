@@ -1,9 +1,10 @@
 "use strict";
 
-// 테스트: sample-data CSV 전체 분석 + 원본 매뉴얼 골든 수치 + JSON 왕복 검증
+// 테스트: sample-data CSV 전체 분석 + 원본 매뉴얼 골든 수치 + JSON 왕복 + 레거시 .dat 읽기
 const fs = require("fs");
 const path = require("path");
-const { parseResponsesCsv, parseJson, buildDataJson, buildReportJson } = require("./format.js");
+const { parseResponsesCsv, parseJson, buildDataJson } = require("./format.js");
+const { parseDatText } = require("./legacy-dat.js");
 const { analyze } = require("./analysis.js");
 
 const dir = path.join(__dirname, "..", "sample-data");
@@ -74,12 +75,27 @@ const same = Math.abs(reResult.stats.mean - st.mean) < 1e-9 &&
 if (same) { console.log(`OK  JSON 왕복: 평균 ${reResult.stats.mean.toFixed(3)}, α ${reResult.stats.reliability.toFixed(3)} 동일`); pass++; }
 else { console.log("FAIL JSON 왕복 불일치"); fail++; }
 
-// 리포트 JSON 직렬화/파싱
-const report = JSON.parse(buildReportJson(ansData, ansResult));
-if (report.testStatistics.cronbachAlpha === round(st.reliability, 3) &&
-    report.items.length === 70 && report.students.length === 119) {
-  console.log("OK  리포트 JSON 구조 검증"); pass++;
-} else { console.log("FAIL 리포트 JSON 구조"); fail++; }
+// 레거시 .dat 읽기: answer 데이터를 .dat 텍스트로 재구성해 파싱 → 골든 수치 재현
+const nItems = ansData.nItems;
+const pad = (s, w) => String(s).padStart(w, " ");
+let datText = pad(nItems, 3) + "     " + pad(4, 2) + "\n";
+datText += ansData.key.map(c => c === " " ? " " : c).join("") + "\n";
+datText += ansData.numOptions.map(o => o || " ").join("") + "\n";
+datText += ansData.scored.map(s => s ? "y" : "n").join("") + "\n";
+ansData.students.forEach(s => {
+  datText += s.id + s.resp.map(c => c === " " ? " " : c).join("") + "\n";
+});
+const datData = parseDatText(datText);
+const datResult = analyze(datData);
+const datOk = datResult.stats.n === 119 &&
+  Math.abs(round(datResult.stats.mean, 3) - 45.059) < 0.0005 &&
+  Math.abs(round(datResult.stats.reliability, 3) - 0.633) < 0.0005 &&
+  Math.abs(round(datResult.items[0].alphaIfDeleted, 3) - 0.641) < 0.0005 &&
+  datResult.items[0].options.find(o => o.option === "2").propAll > 0.5;
+if (datOk) {
+  console.log(`OK  레거시 .dat 읽기: 평균 ${datResult.stats.mean.toFixed(3)}, α ${datResult.stats.reliability.toFixed(3)} (골든 일치)`);
+  pass++;
+} else { console.log("FAIL 레거시 .dat 읽기 불일치"); fail++; }
 
 if (fail > 0) { console.error(`\n${fail}개 실패`); process.exit(1); }
 console.log(`\n모든 테스트 통과 (${pass}개, 골든 ${golden.length - goldenFail}/${golden.length})`);

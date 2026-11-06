@@ -6,6 +6,23 @@ let currentResult = null;
 const $ = id => document.getElementById(id);
 
 $("loadDemo").addEventListener("click", loadDemo);
+$("openDat").addEventListener("click", () => $("datFile").click());
+$("datFile").addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      currentData = parseDatText(reader.result);
+      run();
+    } catch (err) {
+      setStatus(".dat 파일을 읽을 수 없습니다: " + err.message, "error");
+    }
+  };
+  reader.onerror = () => setStatus(".dat 파일을 읽을 수 없습니다.", "error");
+  reader.readAsText(file, "latin1");
+  e.target.value = "";
+});
 $("newData").addEventListener("click", openNewModal);
 $("newBuild").addEventListener("click", buildNewItemTable);
 $("newGenerate").addEventListener("click", generateNewFile);
