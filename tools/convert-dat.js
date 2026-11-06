@@ -1,6 +1,6 @@
 "use strict";
 
-// 레거시 TestAn .dat → 현대 CSV 변환 도구 (원본 파일은 Orgin/ 에 보관용으로만 남음)
+// 레거시 TestAn .dat → 현대 CSV 변환 도구
 // 사용: node tools/convert-dat.js Orgin/input_test1.dat sample-data/input_test1.csv
 
 const fs = require("fs");

@@ -59,16 +59,6 @@ function setStatus(msg, cls) {
 }
 
 function readFileText(file) {
-  const name = file.name.toLowerCase();
-  if (name.endsWith(".xlsx") || name.endsWith(".xls")) {
-    if (typeof XLSX === "undefined") {
-      return Promise.reject(new Error("Excel 파일 지원은 xlsx 라이브러리 로드가 필요합니다. CSV 또는 JSON을 사용해 주세요."));
-    }
-    return file.arrayBuffer().then(buf => {
-      const wb = XLSX.read(buf, { type: "array" });
-      return XLSX.utils.sheet_to_csv(wb.Sheets[wb.SheetNames[0]]);
-    });
-  }
   return new Promise((resolve, reject) => {
     const r = new FileReader();
     r.onerror = () => reject(new Error("파일을 읽을 수 없습니다."));

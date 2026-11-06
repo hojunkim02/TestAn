@@ -26,7 +26,7 @@ files.forEach(f => {
   }
 });
 
-// 골든 테스트: 원본 매뉴얼(그림 14~16)의 answer.dat 분석 수치와 일치 검증
+// 골든 테스트: 원본 매뉴얼(그림 14~16)의 answer 자료 분석 수치와 일치 검증
 const ansData = parseResponsesCsv(fs.readFileSync(path.join(dir, "answer.csv"), "utf8"));
 const ansResult = analyze(ansData);
 const st = ansResult.stats;

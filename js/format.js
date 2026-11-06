@@ -1,6 +1,6 @@
 "use strict";
 
-// 현대 데이터 포맷 처리: CSV / JSON (Excel은 sheet_to_csv 결과를 CSV 경로로 처리)
+// 현대 데이터 포맷 처리: CSV / JSON
 //
 // 응답 CSV 형식:
 //   id,q1,q2,...,qN
