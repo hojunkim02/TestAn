@@ -277,7 +277,7 @@ const renderChart = () => {
   const canvas = $("chart");
   const dpr = window.devicePixelRatio || 1;
   const w = Math.max(320, canvas.getBoundingClientRect().width || 900);
-  const h = 400;
+  const h = w < 640 ? 300 : 400;   // 모바일에서는 차트 높이 축소
   canvas.width = Math.round(w * dpr);
   canvas.height = Math.round(h * dpr);
   canvas.style.height = h + "px";
