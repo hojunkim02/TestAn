@@ -94,7 +94,7 @@ const parseDataCsv = (text) => {
     }
     students.push({
       id: (r[0] || "").trim() || "S" + (students.length + 1),
-      resp: padCells(cells, nItems),
+      resp: padCells(cells, nItems).map((c) => (c === "" ? " " : String(c))),
     });
   }
   if (!students.length) {
@@ -114,10 +114,7 @@ const parseDataCsv = (text) => {
       (c) => String(c).trim().toLowerCase() !== "n",
     ),
     weights: new Array(nItems).fill(1),
-    students: students.map((s) => ({
-      id: s.id,
-      resp: s.resp.map((c) => (c === "" ? " " : String(c))),
-    })),
+    students,
   };
 };
 
