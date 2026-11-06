@@ -2,55 +2,34 @@
 
 let currentData = null;
 let currentResult = null;
-let newLinkText = null;
 
 const $ = id => document.getElementById(id);
 
-$("inputFile").addEventListener("change", e => handleFile(e, "input"));
-$("answerFile").addEventListener("change", e => handleFile(e, "answer"));
 $("loadDemo").addEventListener("click", loadDemo);
-$("editData").addEventListener("click", openEditModal);
-$("editApply").addEventListener("click", applyEdit);
-$("editCancel").addEventListener("click", () => $("editModal").hidden = true);
 $("newData").addEventListener("click", openNewModal);
 $("newBuild").addEventListener("click", buildNewItemTable);
 $("newGenerate").addEventListener("click", generateNewFile);
 $("newCancel").addEventListener("click", () => $("newModal").hidden = true);
-$("newLink").addEventListener("change", e => {
-  const f = e.target.files[0];
-  if (!f) { newLinkText = null; return; }
-  readFileText(f).then(text => { newLinkText = text; });
-});
+$("editData").addEventListener("click", openEditModal);
+$("editApply").addEventListener("click", applyEdit);
+$("editCancel").addEventListener("click", () => $("editModal").hidden = true);
 $("printBtn").addEventListener("click", () => window.print());
 $("aboutBtn").addEventListener("click", () => $("aboutModal").hidden = false);
 $("aboutClose").addEventListener("click", () => $("aboutModal").hidden = true);
-["optScores", "optItems", "optReport", "srtMode"].forEach(id =>
-  $(id).addEventListener("change", refreshFileOptions));
 $("itemSort").addEventListener("change", () => renderItems());
 $("graphMode").addEventListener("change", () => { renderChart(); renderGraphTable(); });
-$("fileSelect").addEventListener("change", renderFileArea);
-$("fileDownload").addEventListener("click", () => {
-  const kind = $("fileSelect").value;
-  const name = kind === "scores" ? "scores.csv" : kind === "items" ? "items.csv" : "report.json";
-  download(name, buildFile(kind));
-});
-$("downloadScores").addEventListener("click", () => download("scores.csv", buildScoresCsv(currentResult)));
-$("downloadItems").addEventListener("click", () => download("items.csv", buildItemsCsv(currentResult)));
-$("downloadReport").addEventListener("click", () => download("report.json", buildReportJson(currentData, currentResult)));
+$("optionItem").addEventListener("change", renderOptions);
 
 document.querySelectorAll("#tabs button").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll("#tabs button").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
-    ["input", "score", "item", "option", "graph", "files"].forEach(t => {
+    ["input", "score", "item", "option", "graph"].forEach(t => {
       $("tab-" + t).hidden = t !== btn.dataset.tab;
     });
-    if (btn.dataset.tab === "files") renderFileArea();
     if (btn.dataset.tab === "graph") { renderChart(); renderGraphTable(); }
   });
 });
-
-$("optionItem").addEventListener("change", renderOptions);
 
 function setStatus(msg, cls) {
   const el = $("status");
@@ -58,53 +37,12 @@ function setStatus(msg, cls) {
   el.className = "status " + (cls || "");
 }
 
-function readFileText(file) {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onerror = () => reject(new Error("파일을 읽을 수 없습니다."));
-    r.onload = () => resolve(r.result);
-    r.readAsText(file, "utf-8");
-  });
-}
-
-function parseInputText(text) {
-  const t = text.trim();
-  if (t.startsWith("{") || t.startsWith("[")) return parseJson(text);
-  return parseResponsesCsv(text);
-}
-
-function handleFile(e, kind) {
-  const file = e.target.files[0];
-  if (!file) return;
-  readFileText(file)
-    .then(text => {
-      if (kind === "input") {
-        $("inputFileName").textContent = file.name;
-        currentData = parseInputText(text);
-        const ansFile = $("answerFile").files[0];
-        if (ansFile) {
-          return readFileText(ansFile).then(ansText => {
-            applyKeyData(currentData, ansText);
-            return null;
-          });
-        }
-      } else {
-        $("answerFileName").textContent = file.name;
-        if (!currentData) throw new Error("응답 데이터를 먼저 선택하세요.");
-        applyKeyData(currentData, text);
-      }
-    })
-    .then(() => run())
-    .catch(err => setStatus(err.message, "error"));
-}
-
 function loadDemo() {
   fetch("sample-data/answer.csv")
     .then(r => { if (!r.ok) throw new Error("샘플 파일을 불러올 수 없습니다."); return r.text(); })
     .then(text => {
-      $("inputFileName").textContent = "answer.csv (샘플)";
-      $("answerFileName").textContent = "없으면 응답 데이터의 KEY 행 사용";
       currentData = parseResponsesCsv(text);
+      $("inputFileName") && ($("inputFileName").textContent = "answer.csv (샘플)");
       run();
     })
     .catch(err => setStatus(err.message, "error"));
@@ -121,26 +59,10 @@ function run() {
   renderOptions();
   renderChart();
   renderGraphTable();
-  refreshFileOptions();
-  renderFileArea();
 }
 
-function openEditModal() {
-  if (!currentData) { setStatus("먼저 데이터를 불러오세요.", "error"); return; }
-  $("editArea").value = buildDataJson(currentData);
-  $("editModal").hidden = false;
-}
-
-function applyEdit() {
-  try {
-    currentData = parseJson($("editArea").value);
-    $("editModal").hidden = true;
-    run();
-  } catch (err) {
-    alert("편집 내용을 적용할 수 없습니다:\n" + err.message);
-  }
-}
-
+// 새 응답자료 만들기 — 원본 .dat 생성 절차와 동일한 흐름:
+// 문항 수 → 문항별 정답/답지수/포함여부 → 학생 응답(붙여넣기) → 분석
 function openNewModal() {
   $("newModal").hidden = false;
   buildNewItemTable();
@@ -160,10 +82,6 @@ function buildNewItemTable() {
 }
 
 function generateNewFile() {
-  if (!newLinkText) {
-    alert("학생 응답이 들어있는 '연결할 파일'을 지정해주세요.");
-    return;
-  }
   const n = Math.max(1, Math.min(200, Number($("newItems").value) || 1));
   const cells = $("newTable").querySelectorAll(".cell-input");
   if (cells.length < n * 3) { alert("먼저 '항목 표 만들기'를 눌러주세요."); return; }
@@ -175,58 +93,54 @@ function generateNewFile() {
     if (c.dataset.col === "flag") flags[i] = (c.value.trim() || "y").toLowerCase().slice(0, 1) === "n" ? "n" : "y";
   });
 
-  let linkData;
-  try { linkData = parseInputText(newLinkText); }
-  catch (err) { alert("연결 파일을 해석할 수 없습니다:\n" + err.message); return; }
-  if (linkData.nItems !== n) {
-    alert(`연결 파일의 문항 수(${linkData.nItems})가 생성할 문항 수(${n})와 다릅니다.`);
-    return;
-  }
+  const paste = $("newPaste").value.trim();
+  if (!paste) { alert("학생 응답을 붙여 넣어주세요."); return; }
 
-  const rows = [["id", ...Array.from({ length: n }, (_, i) => "q" + (i + 1))]];
-  rows.push(["KEY", ...keys]);
-  rows.push(["OPTIONS", ...opts]);
-  rows.push(["INCLUDE", ...flags]);
-  linkData.students.forEach(s => rows.push([s.id, ...s.resp.map(c => c === " " ? "" : c)]));
-
-  const csv = toCsv(rows);
-  $("newModal").hidden = true;
-  try {
-    currentData = parseResponsesCsv(csv);
-    $("inputFileName").textContent = "새로 생성한 자료파일";
-    run();
-    download("new_responses.csv", csv);
-  } catch (err) {
-    alert("자료파일 생성 실패: " + err.message);
-  }
-}
-
-function refreshFileOptions() {
-  const sel = $("fileSelect");
-  [...sel.options].forEach(o => {
-    if (o.value === "scores") o.hidden = !$("optScores").checked;
-    if (o.value === "items") o.hidden = !$("optItems").checked;
-    if (o.value === "report") o.hidden = !$("optReport").checked;
+  // 한 줄에 한 명: 앞부분은 ID, 마지막 문항수 길이가 응답 (공백=무응답)
+  const students = [];
+  paste.replace(/\r\n?/g, "\n").split("\n").filter(l => l.trim()).forEach((raw, i) => {
+    const line = raw.replace(/,/g, "").replace(/\s+$/, "");
+    let id, resp;
+    if (line.length >= n && line.slice(line.length - n).trim() !== "") {
+      resp = line.slice(line.length - n);
+      id = line.slice(0, line.length - n).trim();
+    } else if (line.length > n) {
+      const t = line;
+      resp = t.slice(t.length - n);
+      id = t.slice(0, t.length - n).trim();
+    } else {
+      resp = line.padEnd(n, " ");
+      id = "";
+    }
+    students.push({ id: id || ("S" + (i + 1)), resp: resp.split("") });
   });
-  if (sel.selectedOptions[0] && sel.selectedOptions[0].hidden) {
-    const first = [...sel.options].find(o => !o.hidden);
-    if (first) sel.value = first.value;
+
+  currentData = {
+    nItems: n,
+    key: keys,
+    numOptions: opts.map(o => parseInt(o, 10) || 0),
+    scored: flags.map(f => f !== "n"),
+    weights: new Array(n).fill(1),
+    students
+  };
+  $("newModal").hidden = true;
+  run();
+}
+
+function openEditModal() {
+  if (!currentData) { setStatus("먼저 데이터를 불러오세요.", "error"); return; }
+  $("editArea").value = buildDataJson(currentData);
+  $("editModal").hidden = false;
+}
+
+function applyEdit() {
+  try {
+    currentData = parseJson($("editArea").value);
+    $("editModal").hidden = true;
+    run();
+  } catch (err) {
+    alert("편집 내용을 적용할 수 없습니다:\n" + err.message);
   }
-  $("downloadScores").style.display = $("optScores").checked ? "" : "none";
-  $("downloadItems").style.display = $("optItems").checked ? "" : "none";
-  $("downloadReport").style.display = $("optReport").checked ? "" : "none";
-  if (currentResult) renderFileArea();
-}
-
-function buildFile(kind) {
-  if (kind === "scores") return buildScoresCsv(currentResult);
-  if (kind === "items") return buildItemsCsv(currentResult);
-  return buildReportJson(currentData, currentResult);
-}
-
-function renderFileArea() {
-  if (!currentResult) { $("fileArea").value = ""; return; }
-  $("fileArea").value = buildFile($("fileSelect").value);
 }
 
 function renderInput() {
@@ -271,11 +185,8 @@ function renderScores() {
 
 function renderItems() {
   const mode = $("itemSort").value;
-  const sortMode = $("srtMode").value;
   let items = [...currentResult.items];
-  if (mode === "index") {
-    if (sortMode === "disc") items.sort((a, b) => b.discrimination - a.discrimination);
-  } else if (mode === "diffAsc") items.sort((a, b) => a.difficulty - b.difficulty);
+  if (mode === "diffAsc") items.sort((a, b) => a.difficulty - b.difficulty);
   else if (mode === "diffDesc") items.sort((a, b) => b.difficulty - a.difficulty);
   else if (mode === "discDesc") items.sort((a, b) => b.discrimination - a.discrimination);
 
@@ -411,14 +322,4 @@ function renderGraphTable() {
       `<td>${cum}</td><td>${(st.n ? cum / st.n * 100 : 0).toFixed(2)}</td></tr>`;
   }
   $("graphTable").innerHTML = html;
-}
-
-function download(name, content) {
-  const type = name.endsWith(".json") ? "application/json" : "text/csv;charset=utf-8";
-  const blob = new Blob(["\uFEFF" + content], { type });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = name;
-  a.click();
-  URL.revokeObjectURL(a.href);
 }
