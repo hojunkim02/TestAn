@@ -654,10 +654,12 @@ document.querySelectorAll(".modal").forEach((m) =>
   }),
 );
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape")
+  if (e.key === "Escape") {
     document
       .querySelectorAll(".modal:not([hidden])")
       .forEach((m) => (m.hidden = true));
+    toggleExportMenu(false);
+  }
 });
 $("loadDemo").addEventListener("click", loadDemo);
 $("newData").addEventListener("click", openNewModal);
@@ -677,61 +679,82 @@ const digitOnly = (e) => {
 $("newTable").addEventListener("input", digitOnly);
 $("editTable").addEventListener("input", digitOnly);
 
-$("importCsv").addEventListener("click", () => $("csvFile").click());
-$("csvFile").addEventListener("change", (e) => {
+/** 파일 내용을 지정 인코딩의 텍스트로 읽는 Promise 래퍼. */
+const readAsText = (file, encoding) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("파일을 읽을 수 없습니다."));
+    reader.readAsText(file, encoding);
+  });
+
+/** 확장자와 내용(첫 줄 형태)으로 CSV / .dat 형식을 판별한다. */
+const detectFormat = (name, text) => {
+  const ext = name.toLowerCase().split(".").pop();
+  if (ext === "csv") return "csv";
+  if (ext === "dat") return "dat";
+  const firstLine = text
+    .replace(/^\uFEFF/, "")
+    .trimStart()
+    .split(/\r?\n/)[0];
+  if (/^id\b/i.test(firstLine)) return "csv";
+  if (/^\d+(\s+\d+)?\s*$/.test(firstLine)) return "dat";
+  return "csv";
+};
+
+/** 불러오기: CSV / .dat를 자동 판별해 파싱하고 분석을 실행한다. */
+const importFile = async (file) => {
+  try {
+    const utf8 = await readAsText(file, "utf-8");
+    const format = detectFormat(file.name, utf8);
+    const text = format === "dat" ? await readAsText(file, "latin1") : utf8;
+    currentData = format === "dat" ? parseDatText(text) : parseDataCsv(text);
+    run();
+  } catch (err) {
+    setStatus(err.message, "error");
+  }
+};
+
+$("importFile").addEventListener("click", () => $("fileInput").click());
+$("fileInput").addEventListener("change", (e) => {
   const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
-      currentData = parseDataCsv(reader.result);
-      run();
-    } catch (err) {
-      setStatus(".csv 파일을 읽을 수 없습니다: " + err.message, "error");
-    }
-  };
-  reader.onerror = () => setStatus(".csv 파일을 읽을 수 없습니다.", "error");
-  reader.readAsText(file, "utf-8");
   e.target.value = "";
+  if (file) importFile(file);
 });
-$("exportCsv").addEventListener("click", () => {
+
+/** 내보낼 데이터가 없으면 안내하고, 있으면 주어진 직렬화 함수로 내려받는다. */
+const exportAs = (build) => {
   if (!currentData) {
     setStatus("내보낼 데이터가 없습니다.", "error");
     return;
   }
-  downloadFile(
-    "responses.csv",
-    "\uFEFF" + buildDataCsv(currentData),
-    "text/csv;charset=utf-8",
+  build(currentData);
+};
+
+// 내보내기 드롭다운 메뉴
+const exportMenu = $("exportMenu");
+const toggleExportMenu = (show = !exportMenu.hidden) => {
+  exportMenu.hidden = show;
+};
+$("exportBtn").addEventListener("click", () => toggleExportMenu());
+$("exportCsv").addEventListener("click", () => {
+  toggleExportMenu(false);
+  exportAs((d) =>
+    downloadFile(
+      "responses.csv",
+      "\uFEFF" + buildDataCsv(d),
+      "text/csv;charset=utf-8",
+    ),
   );
-});
-$("importDat").addEventListener("click", () => $("datFile").click());
-$("datFile").addEventListener("change", (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
-      currentData = parseDatText(reader.result);
-      run();
-    } catch (err) {
-      setStatus(".dat 파일을 읽을 수 없습니다: " + err.message, "error");
-    }
-  };
-  reader.onerror = () => setStatus(".dat 파일을 읽을 수 없습니다.", "error");
-  reader.readAsText(file, "latin1");
-  e.target.value = "";
 });
 $("exportDat").addEventListener("click", () => {
-  if (!currentData) {
-    setStatus("내보낼 데이터가 없습니다.", "error");
-    return;
-  }
-  downloadFile(
-    "responses.dat",
-    buildDatText(currentData),
-    "text/plain;charset=latin1",
+  toggleExportMenu(false);
+  exportAs((d) =>
+    downloadFile("responses.dat", buildDatText(d), "text/plain;charset=latin1"),
   );
+});
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".export-menu")) toggleExportMenu(false);
 });
 $("newCancel").addEventListener("click", () => ($("newModal").hidden = true));
 $("editData").addEventListener("click", () => openEditModal(null));

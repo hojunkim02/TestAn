@@ -32,12 +32,15 @@
           <button id="loadDemo" class="btn accent">샘플 데이터로 보기</button>
           <button id="newData" class="btn">새 응답자료 만들기</button>
           <button id="editData" class="btn">데이터 편집</button>
-          <button id="importCsv" class="btn">.csv 불러오기</button>
-          <input type="file" id="csvFile" accept=".csv,.txt" hidden />
-          <button id="exportCsv" class="btn">.csv 내보내기</button>
-          <button id="importDat" class="btn">.dat 불러오기</button>
-          <input type="file" id="datFile" accept=".dat,.txt" hidden />
-          <button id="exportDat" class="btn">.dat 내보내기</button>
+          <button id="importFile" class="btn">불러오기 (.csv / .dat)</button>
+          <input type="file" id="fileInput" accept=".csv,.dat,.txt" hidden />
+          <div class="export-menu">
+            <button id="exportBtn" class="btn">내보내기 ▾</button>
+            <div id="exportMenu" class="menu" hidden>
+              <button class="menu-item" id="exportCsv">CSV (.csv)</button>
+              <button class="menu-item" id="exportDat">DAT (.dat)</button>
+            </div>
+          </div>
           <button id="aboutBtn" class="btn">정보</button>
         </div>
         <div id="status" class="status"></div>
