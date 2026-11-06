@@ -481,27 +481,6 @@ canvas {
   border-radius: var(--radius-m);
   box-shadow: var(--shadow-2);
 }
-textarea {
-  width: 100%;
-  font-family: "Cascadia Mono", Consolas, "Courier New", monospace;
-  font-size: 12px;
-  border: 1px solid var(--stroke-strong);
-  border-radius: var(--radius-s);
-  padding: 10px;
-  box-sizing: border-box;
-  white-space: pre;
-  overflow: auto;
-  background: var(--card-solid);
-  resize: vertical;
-}
-textarea:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent);
-}
-textarea::placeholder {
-  color: var(--text-disabled);
-}
 /* Modal dialog — Fluent 2 acrylic surface */
 .modal {
   position: fixed;
@@ -572,10 +551,6 @@ textarea::placeholder {
 .modal-narrow {
   max-width: 420px;
 }
-.cell-input {
-  width: 58px;
-  text-align: center;
-}
 footer {
   text-align: center;
   color: var(--text-disabled);
@@ -596,39 +571,6 @@ footer {
   color: var(--text-secondary);
   font-size: 14px;
 }
-.wiz-layout {
-  display: flex;
-  gap: 20px;
-  align-items: flex-start;
-}
-.wiz-editor {
-  flex: 0 0 240px;
-}
-.wiz-item-label {
-  min-width: 90px;
-  text-align: center;
-  font-weight: 600;
-  color: var(--text);
-}
-.wiz-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 10px;
-}
-.wiz-fields label {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  color: var(--text-secondary);
-  font-size: 14px;
-}
-.wiz-fields input {
-  width: 90px;
-}
-.wiz-fields #wizKey {
-  width: 60px;
-}
 .wiz-table {
   flex: 1;
   max-height: 320px;
@@ -636,10 +578,6 @@ footer {
 .wiz-footer {
   margin-top: 14px;
   justify-content: flex-end;
-}
-.data-table tr.wiz-active td {
-  background: var(--accent-tint);
-  font-weight: 600;
 }
 .modal-wide {
   max-width: 1000px;
@@ -806,13 +744,6 @@ footer {
   .modal-content {
     padding: 14px 12px;
     max-height: 92vh;
-  }
-  .wiz-layout {
-    flex-direction: column;
-    gap: 12px;
-  }
-  .wiz-editor {
-    flex: auto;
   }
   .wiz-table {
     max-height: 40vh;

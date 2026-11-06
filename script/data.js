@@ -135,17 +135,6 @@ const buildDataCsv = (data) => {
   return toCsv(rows);
 };
 
-/** 문항 수만으로 기본 골격 CSV를 생성한다 (새 응답자료 만들기용). */
-const buildScaffoldCsv = (nItems) => {
-  const rows = [
-    ["id", ...Array.from({ length: nItems }, (_, i) => "q" + (i + 1))],
-    ["KEY", ...new Array(nItems).fill("1")],
-    ["OPTIONS", ...new Array(nItems).fill("4")],
-    ["INCLUDE", ...new Array(nItems).fill("y")],
-  ];
-  return toCsv(rows);
-};
-
 // ---------- 레거시 .dat 형식 입출력 (편집 화면·외부 파일용) ----------
 // 내부 데이터 모델은 CSV와 동일하게 유지되며, .dat은 표현 형식으로만 사용된다.
 // 형식: 첫 줄 = 문항수(1-3열) + ID 캐릿수(9-10열),
@@ -243,23 +232,11 @@ const buildDatText = (data) => {
   return lines.join("\r\n") + "\r\n";
 };
 
-/** 문항 수·ID 캐릿수·항목별 정보로 .dat 골격을 생성한다 (새 응답자료 만들기용). */
-const buildScaffoldDat = (nItems, idWidth, keys, options, flags) => {
-  const pad = (s, w) => String(s).padStart(w, " ");
-  const lines = [pad(nItems, 3) + "     " + pad(idWidth || 4, 2)];
-  lines.push(keys.join(""));
-  lines.push(options.join(""));
-  lines.push(flags.join(""));
-  return lines.join("\r\n") + "\r\n";
-};
-
 if (typeof module !== "undefined") {
   module.exports = {
     parseDataCsv,
     buildDataCsv,
-    buildScaffoldCsv,
     parseDatText,
     buildDatText,
-    buildScaffoldDat,
   };
 }
