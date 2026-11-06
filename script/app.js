@@ -227,7 +227,7 @@ const renderEditGrid = () => {
     for (let j = 0; j < m.nItems; j++) {
       html += `<td><input type="text" inputmode="numeric" maxlength="1" class="grid-input" data-row="${i}" data-col="${j}" value="${escAttr(s.resp[j])}"></td>`;
     }
-    html += `<td><button class="btn row-del" data-row="${i}" title="행 삭제">✕</button></td></tr>`;
+    html += `<td><button class="row-del" data-row="${i}" title="행 삭제" aria-label="${escAttr(s.id)} 행 삭제"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M6.5 1.75A.75.75 0 0 1 7.25 1h1.5a.75.75 0 0 1 .75.75V3h3.25a.75.75 0 0 1 0 1.5H2.25a.75.75 0 0 1 0-1.5H6.5V1.75zM3.44 5.5h9.12l-.6 8.24a1.5 1.5 0 0 1-1.5 1.26H5.54a1.5 1.5 0 0 1-1.5-1.26L3.44 5.5zm2.31 1.5v5h1v-5h-1zm2.5 0v5h1v-5h-1z"/></svg></button></td></tr>`;
   });
   $("editTable").innerHTML = html;
   $("editTable")

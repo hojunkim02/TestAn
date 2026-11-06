@@ -379,12 +379,6 @@ main {
   margin: 4px 2px 14px;
   padding: 0 6px;
   flex-wrap: nowrap;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-.tabs::-webkit-scrollbar {
-  display: none;
 }
 .tabs button {
   appearance: none;
@@ -687,11 +681,48 @@ footer {
   color: var(--text-secondary);
   font-weight: 600;
 }
+/* 편집 그리드 행 삭제 — 스티키 열로 항상 노출 */
+.edit-grid-wrap .data-table thead th:last-child,
+.edit-grid-wrap .data-table td:last-child {
+  position: sticky;
+  right: 0;
+}
+.edit-grid-wrap .data-table thead th:last-child {
+  background: var(--mica);
+}
+.edit-grid-wrap .data-table td:last-child {
+  background: var(--card-solid);
+  box-shadow: inset 1px 0 0 var(--stroke);
+}
+.edit-grid-wrap .data-table tbody tr:hover td:last-child {
+  background: var(--accent-tint);
+  box-shadow: inset 1px 0 0 var(--stroke);
+}
 .row-del {
-  min-height: 24px;
-  padding: 2px 8px;
-  font-size: 12px;
+  appearance: none;
+  background: none;
+  border: none;
+  border-radius: var(--radius-s);
+  min-width: 28px;
+  min-height: 28px;
+  padding: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--duration-1) var(--curve-decel);
+}
+.row-del svg {
+  fill: currentColor;
+}
+.row-del:hover {
+  background: var(--error-tint);
+  color: var(--error);
+}
+.row-del:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 1px;
 }
 .controls .summary {
   flex-basis: 100%;
@@ -738,6 +769,23 @@ footer {
   }
   .controls .btn {
     flex: 1 1 auto;
+  }
+  .controls .split-btn {
+    flex: 1 1 auto;
+  }
+  .controls .icon-btn {
+    flex: 0 0 auto;
+  }
+  .menu {
+    max-width: calc(100vw - 32px);
+  }
+  .tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar {
+    display: none;
   }
   .tabs button {
     padding: 10px 10px 12px;
@@ -797,8 +845,9 @@ footer {
     font-size: 14px;
   }
   .row-del {
-    min-height: 32px;
-    padding: 4px 10px;
+    min-height: 36px;
+    min-width: 36px;
+    padding: 6px;
   }
   .controls input[type="number"],
   .controls input[type="text"],
