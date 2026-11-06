@@ -34,6 +34,7 @@
     <button data-tab="input" class="active">입력 데이터</button>
     <button data-tab="score">점수 결과</button>
     <button data-tab="item">문항 분석</button>
+    <button data-tab="option">답지 분석</button>
     <button data-tab="graph">그래프</button>
   </nav>
 
@@ -62,9 +63,21 @@
       </label>
       <button id="downloadOut" class="btn">결과 파일 (.out)</button>
       <button id="downloadScr" class="btn">점수 파일 (.scr)</button>
-      <button id="downloadSrt" class="btn">정렬 파일 (.srt)</button>
+      <button id="downloadSrt" class="btn">난이도 정렬 (.srt)</button>
+      <button id="downloadSrtDisc" class="btn">변별도 정렬 (.srt)</button>
     </div>
     <table class="data-table" id="itemTable"></table>
+  </section>
+
+  <section id="tab-option" class="tab-content" hidden>
+    <h2>답지 분석</h2>
+    <div class="controls">
+      <label>문항:
+        <select id="optionItem"></select>
+      </label>
+      <span id="optionSummary" class="summary"></span>
+    </div>
+    <table class="data-table" id="optionTable"></table>
   </section>
 
   <section id="tab-graph" class="tab-content" hidden>

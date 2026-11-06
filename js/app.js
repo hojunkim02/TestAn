@@ -12,17 +12,20 @@ $("itemSort").addEventListener("change", () => renderItems());
 $("graphMode").addEventListener("change", () => renderChart());
 $("downloadOut").addEventListener("click", () => download("result.out", buildOut()));
 $("downloadScr").addEventListener("click", () => download("result.scr", buildScr()));
-$("downloadSrt").addEventListener("click", () => download("result.srt", buildSrt()));
+$("downloadSrt").addEventListener("click", () => download("result_diff.srt", buildSrt("diff")));
+$("downloadSrtDisc").addEventListener("click", () => download("result_disc.srt", buildSrt("disc")));
 
 document.querySelectorAll("#tabs button").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll("#tabs button").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
-    ["input", "score", "item", "graph"].forEach(t => {
+    ["input", "score", "item", "option", "graph"].forEach(t => {
       $("tab-" + t).hidden = t !== btn.dataset.tab;
     });
   });
 });
+
+$("optionItem").addEventListener("change", renderOptions);
 
 function setStatus(msg, cls) {
   const el = $("status");
@@ -77,6 +80,8 @@ function run() {
   renderInput();
   renderScores();
   renderItems();
+  renderOptionSelect();
+  renderOptions();
   renderChart();
 }
 
@@ -105,9 +110,13 @@ function renderInput() {
 
 function renderScores() {
   const st = currentResult.stats;
-  $("scoreSummary").textContent =
-    `평균 ${st.mean.toFixed(2)} · 표준편차 ${st.sd.toFixed(2)} · ` +
-    `최고 ${st.max} · 최저 ${st.min} · Cronbach α ${st.reliability.toFixed(3)}`;
+  const r = currentResult;
+  $("scoreSummary").innerHTML =
+    `피험자 ${st.n}명 · 평균 ${st.mean.toFixed(2)} · 표준편차 ${st.sd.toFixed(2)} · 분산 ${st.variance.toFixed(2)} · ` +
+    `최저 ${st.min} · 최고 ${st.high} · 중앙값 ${st.median} · 왜도 ${st.skewness.toFixed(3)} · 첨도 ${st.kurtosis.toFixed(3)}<br>` +
+    `평균난이도 ${st.meanDifficulty.toFixed(3)} · 평균변별도 ${st.meanDiscrimination.toFixed(3)} · ` +
+    `Cronbach α ${st.reliability.toFixed(3)} · 측정오차 ${st.sem.toFixed(3)} · ` +
+    `상위 27% ${r.upper.n}명(${r.upper.min}~${r.upper.max}점) · 하위 27% ${r.lower.n}명(${r.lower.min}~${r.lower.max}점)`;
 
   let html = "<tr><th>순위</th><th>ID</th><th>점수</th><th>만점 대비(%)</th><th>정답 문항수</th></tr>";
   [...currentResult.students].sort((a, b) => a.rank - b.rank).forEach(s => {
@@ -125,14 +134,44 @@ function renderItems() {
   else if (mode === "discDesc") items.sort((a, b) => b.discrimination - a.discrimination);
 
   let html = "<tr><th>문항</th><th>정답</th><th>배점</th><th>정답자</th><th>무응답</th>" +
-    "<th>난이도(p)</th><th>상위 정답률</th><th>하위 정답률</th><th>변별도(D)</th></tr>";
+    "<th>난이도(p)</th><th>문항상관계수</th><th>상위 정답률</th><th>하위 정답률</th><th>변별도(D)</th><th>제외 시 α</th></tr>";
   items.forEach(it => {
+    const negFlag = it.pointBiserial < 0 ? " ◀부정 변별문항" : "";
     html += `<tr><td>${it.index}</td><td>${it.key === " " ? "-" : it.key}</td><td>${it.weight}</td>` +
       `<td>${it.correct}</td><td>${it.blank}</td><td>${(it.difficulty * 100).toFixed(1)}%</td>` +
+      `<td>${it.pointBiserial.toFixed(2)}${negFlag}</td>` +
       `<td>${(it.pUpper * 100).toFixed(1)}%</td><td>${(it.pLower * 100).toFixed(1)}%</td>` +
-      `<td>${it.discrimination.toFixed(2)}</td></tr>`;
+      `<td>${it.discrimination.toFixed(2)}</td><td>${it.alphaIfDeleted.toFixed(3)}</td></tr>`;
   });
   $("itemTable").innerHTML = html;
+}
+
+function renderOptionSelect() {
+  const sel = $("optionItem");
+  sel.innerHTML = currentResult.items.map(it =>
+    `<option value="${it.index - 1}">${it.index}번</option>`).join("");
+}
+
+function renderOptions() {
+  const idx = Number($("optionItem").value) || 0;
+  const it = currentResult.items[idx];
+  if (!it) return;
+  const keyProp = it.options.find(o => o.isKey);
+  $("optionSummary").textContent =
+    `${it.index}번 문항 · 정답 ${it.key} · 난이도 ${(it.difficulty * 100).toFixed(1)}% · 변별도 ${it.discrimination.toFixed(2)}`;
+
+  let html = "<tr><th>답지</th><th>정답</th><th>응답비율 전체</th><th>상위 27%</th>" +
+    "<th>하위 27%</th><th>답지-총점 상관계수</th><th>비고</th></tr>";
+  it.options.forEach(o => {
+    let note = "";
+    if (o.isKey) note = "*";
+    else if (keyProp && o.propAll > keyProp.propAll) note = "◀ 더 매력적임";
+    html += `<tr><td>${o.option}</td><td>${o.isKey ? "*" : ""}</td>` +
+      `<td>${(o.propAll * 100).toFixed(1)}%</td>` +
+      `<td>${(o.propUpper * 100).toFixed(1)}%</td><td>${(o.propLower * 100).toFixed(1)}%</td>` +
+      `<td>${o.pbis.toFixed(2)}</td><td>${note}</td></tr>`;
+  });
+  $("optionTable").innerHTML = html;
 }
 
 function renderChart() {
@@ -184,29 +223,56 @@ function renderChart() {
 
 function buildOut() {
   const st = currentResult.stats;
-  let out = `TestAn Web 분석 결과\n학생 ${st.n}명, 평균 ${st.mean.toFixed(2)}, 표준편차 ${st.sd.toFixed(2)}, Cronbach α ${st.reliability.toFixed(3)}\n\n`;
-  out += "문항,정답,배점,정답자,난이도,변별도\n";
-  currentResult.items.forEach(it => {
-    out += `${it.index},${it.key},${it.weight},${it.correct},${(it.difficulty * 100).toFixed(1)}%,${it.discrimination.toFixed(2)}\n`;
+  const r = currentResult;
+  let out = "검사 분석 프로그램 : TestAn Web\n";
+  out += `파일성격 : 검사 분석 결과 파일\n\n`;
+  out += `문항 수 : ${currentData.nItems} 개\n피험자 수 : ${st.n} 명\n\n`;
+  out += "문항번호,문항난이도,문항상관계수,변별도,정답비율차,정답,무응답\n";
+  r.items.forEach(it => {
+    out += `${it.index},${it.difficulty.toFixed(2)},${it.pointBiserial.toFixed(2)},` +
+      `${it.discrimination.toFixed(2)},${(it.pUpper - it.pLower).toFixed(2)},` +
+      `${it.correct},${it.blank}\n`;
+  });
+  out += "\n[문항분석 결과]\n";
+  out += `문항 수 : ${currentData.nItems}\n`;
+  out += `평균난이도 : ${st.meanDifficulty.toFixed(3)}\n`;
+  out += `평균변별도 : ${st.meanDiscrimination.toFixed(3)}\n`;
+  out += `Alpha 값 : ${st.reliability.toFixed(3)}\n`;
+  out += `측정 오차 : ${st.sem.toFixed(3)}\n\n`;
+  out += "[검사점수 분석 결과]\n";
+  out += `피험자수 : ${st.n}\n평 균 : ${st.mean.toFixed(3)}\n`;
+  out += `표준편차 : ${st.sd.toFixed(3)}\n분 산 : ${st.variance.toFixed(3)}\n`;
+  out += `최저점수 : ${st.min}\n최고점수 : ${st.high}\n중앙값 : ${st.median}\n`;
+  out += `왜 도 : ${st.skewness.toFixed(3)}\n첨 도 : ${st.kurtosis.toFixed(3)}\n\n`;
+  out += `[상위 27% 집단] 피험자수 : ${r.upper.n}, 최저점수 : ${r.upper.min}\n`;
+  out += `[하위 27% 집단] 피험자수 : ${r.lower.n}, 최고점수 : ${r.lower.max}\n\n`;
+  out += "[해당문항을 제외한 검사의 신뢰도]\n";
+  r.items.forEach(it => {
+    out += `${it.index} ${it.alphaIfDeleted.toFixed(3)}\n`;
   });
   return out;
 }
 
 function buildScr() {
-  let out = "순위,ID,점수,백분율,정답문항수\n";
-  [...currentResult.students].sort((a, b) => a.rank - b.rank).forEach(s => {
-    out += `${s.rank},${s.id},${s.raw},${s.percent.toFixed(1)},${s.correctCount}\n`;
+  let out = `TestAn Web - 피험자별 득점표 파일\n\n【문항 수】${currentData.nItems} 개\n【피험자 수】${currentResult.stats.n} 명\n\n`;
+  out += "ID 번호  점수\n";
+  currentResult.students.forEach(s => {
+    out += `${s.id} ${s.raw}\n`;
   });
   return out;
 }
 
-function buildSrt() {
-  let out = "문항,난이도,변별도\n";
-  [...currentResult.items]
-    .sort((a, b) => a.difficulty - b.difficulty)
-    .forEach(it => {
-      out += `${it.index},${(it.difficulty * 100).toFixed(1)}%,${it.discrimination.toFixed(2)}\n`;
-    });
+function buildSrt(mode) {
+  const byDiff = mode !== "disc";
+  let out = byDiff ? "문항번호,문항난이도,변별도 (난이도 내림차순)\n"
+                   : "문항번호,변별도,난이도 (변별도 내림차순)\n";
+  const items = [...currentResult.items];
+  if (byDiff) items.sort((a, b) => b.difficulty - a.difficulty);
+  else items.sort((a, b) => b.discrimination - a.discrimination);
+  items.forEach(it => {
+    out += `${it.index},${byDiff ? it.difficulty.toFixed(2) : it.discrimination.toFixed(2)},` +
+      `${byDiff ? it.discrimination.toFixed(2) : it.difficulty.toFixed(2)}\n`;
+  });
   return out;
 }
 
