@@ -1,25 +1,33 @@
+/* Fluent 2 Design System — light theme tokens (global) */
 :root {
-  --accent: #0067c0;
-  --accent-hover: #1a78c8;
-  --accent-active: #005ba1;
-  --accent-text: #ffffff;
-  --text: #1b1b1b;
-  --text-secondary: #616161;
+  --accent: #0f6cbd; /* colorBrandBackground */
+  --accent-hover: #115ea3; /* colorBrandBackgroundHover */
+  --accent-active: #0c3b5e; /* colorBrandBackgroundPressed */
+  --accent-text: #ffffff; /* colorNeutralForegroundOnBrand */
+  --accent-tint: #ebf3fc; /* colorBrandBackground2 */
+  --text: #242424; /* colorNeutralForeground1 */
+  --text-secondary: #424242; /* colorNeutralForeground2 */
+  --text-tertiary: #616161; /* colorNeutralForeground3 */
   --text-disabled: #9d9d9d;
-  --stroke: rgba(0, 0, 0, 0.08);
-  --stroke-strong: rgba(0, 0, 0, 0.12);
+  --stroke: #e0e0e0; /* colorNeutralStroke2 */
+  --stroke-strong: #d1d1d1; /* colorNeutralStroke1 */
   --stroke-card: rgba(255, 255, 255, 0.7);
-  --mica: #f4f4f4;
-  --card: rgba(255, 255, 255, 0.75);
-  --card-solid: #ffffff;
+  --mica: #fafafa; /* colorNeutralBackground2 */
+  --card: rgba(255, 255, 255, 0.8);
+  --card-solid: #ffffff; /* colorNeutralBackground1 */
+  --card-hover: #f5f5f5; /* colorNeutralBackground3 */
+  --card-pressed: #ebebeb;
   --acrylic: rgba(249, 249, 249, 0.85);
   --shadow-2: 0 1px 2px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.04);
   --shadow-8: 0 4px 8px rgba(0, 0, 0, 0.08), 0 8px 24px rgba(0, 0, 0, 0.1);
   --shadow-16: 0 8px 16px rgba(0, 0, 0, 0.1), 0 16px 48px rgba(0, 0, 0, 0.14);
-  --radius-s: 4px;
-  --radius-m: 8px;
+  --radius-s: 4px; /* borderRadiusMedium (controls) */
+  --radius-m: 8px; /* borderRadiusLarge (surfaces) */
   --success: #0f7b0f;
-  --error: #c42b1c;
+  --error: #c42b1c; /* colorPaletteRedForeground1 */
+  --duration-1: 100ms;
+  --duration-2: 150ms;
+  --curve-decel: cubic-bezier(0, 0, 0, 1); /* Fluent decelerate curve */
 }
 [hidden] {
   display: none !important;
@@ -34,37 +42,43 @@ body {
   margin: 0;
   font-family:
     "Segoe UI Variable Text", "Segoe UI", "Malgun Gothic", system-ui, sans-serif;
-  font-size: 14px;
+  font-size: 14px; /* fontSizeBase300 */
+  line-height: 20px;
   color: var(--text);
   background:
     radial-gradient(
-      1200px 500px at 85% -10%,
-      rgba(0, 103, 192, 0.1),
+      1100px 480px at 85% -10%,
+      rgba(15, 108, 189, 0.07),
       transparent 60%
     ),
     radial-gradient(
       900px 420px at -10% 20%,
-      rgba(139, 0, 208, 0.05),
+      rgba(15, 108, 189, 0.04),
       transparent 55%
     ),
     var(--mica);
   min-height: 100vh;
 }
 header {
-  padding: 20px 32px 12px;
+  padding: 24px 32px 12px;
   max-width: 1100px;
   margin: 0 auto;
 }
 header h1 {
   margin: 0;
-  font-size: 1.5rem;
+  font-family:
+    "Segoe UI Variable Display", "Segoe UI", "Malgun Gothic", system-ui,
+    sans-serif;
+  font-size: 24px; /* fontSizeBase500 / Title3 */
+  line-height: 32px;
   font-weight: 600;
   letter-spacing: -0.01em;
 }
 .subtitle {
   margin: 4px 0 0;
-  color: var(--text-secondary);
-  font-size: 0.82rem;
+  color: var(--text-tertiary);
+  font-size: 12px; /* fontSizeBase200 / Caption */
+  line-height: 16px;
 }
 main {
   max-width: 1100px;
@@ -82,30 +96,31 @@ main {
   padding: 16px 18px;
   margin-bottom: 14px;
 }
+/* Buttons — Fluent 2 secondary/primary */
 .btn {
   appearance: none;
   background: var(--card-solid);
   color: var(--text);
   border: 1px solid var(--stroke-strong);
   border-radius: var(--radius-s);
-  padding: 6px 14px;
+  padding: 5px 14px;
   min-height: 32px;
   font: inherit;
-  font-size: 0.85rem;
+  font-size: 14px;
   cursor: pointer;
   transition:
-    background 120ms ease,
-    box-shadow 120ms ease,
-    transform 80ms ease;
+    background var(--duration-1) var(--curve-decel),
+    border-color var(--duration-1) var(--curve-decel),
+    color var(--duration-1) var(--curve-decel);
 }
 .btn:hover {
-  background: #f6f6f6;
-  box-shadow: var(--shadow-2);
+  background: var(--card-hover);
+  border-color: #b1b1b1; /* colorNeutralStroke1Hover */
 }
 .btn:active {
-  background: #efefef;
-  transform: scale(0.98);
+  background: var(--card-pressed);
   color: var(--accent-active);
+  border-color: #b1b1b1;
 }
 .btn:focus-visible {
   outline: 2px solid var(--text);
@@ -121,25 +136,27 @@ main {
 }
 .btn.accent:active {
   background: var(--accent-active);
+  color: var(--accent-text);
 }
 .btn.accent:focus-visible {
   outline: 2px solid #fff;
   outline-offset: 1px;
 }
-.export-menu {
+/* Dropdown menus — Fluent 2 flyout */
+.menu-wrap {
   position: relative;
 }
 .menu {
   position: absolute;
-  top: calc(100% + 6px);
+  top: calc(100% + 4px);
   right: 0;
   display: flex;
   flex-direction: column;
   min-width: 150px;
   padding: 4px;
   background: var(--card-solid);
-  border: 1px solid var(--stroke-strong);
-  border-radius: var(--radius-s);
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius-m);
   box-shadow: var(--shadow-8);
   z-index: 30;
 }
@@ -148,17 +165,20 @@ main {
   background: none;
   border: none;
   border-radius: var(--radius-s);
-  padding: 7px 12px;
+  padding: 6px 10px;
   font: inherit;
-  font-size: 0.85rem;
+  font-size: 14px;
+  line-height: 20px;
   text-align: left;
   color: var(--text);
   cursor: pointer;
+  transition: background var(--duration-1) var(--curve-decel);
 }
 .menu-item:hover {
-  background: rgba(0, 103, 192, 0.08);
+  background: var(--card-hover);
 }
 .menu-item:active {
+  background: var(--card-pressed);
   color: var(--accent-active);
 }
 .controls {
@@ -167,49 +187,56 @@ main {
   align-items: center;
   flex-wrap: wrap;
   margin-bottom: 10px;
-  font-size: 0.85rem;
+  font-size: 14px;
 }
 .controls label {
   display: inline-flex;
   gap: 6px;
   align-items: center;
   color: var(--text-secondary);
+  white-space: nowrap;
 }
+/* Inputs — Fluent 2 underlined style */
 .controls input[type="number"],
 .controls input[type="text"],
 .controls select,
 .modal-content input[type="number"] {
   appearance: none;
   border: none;
-  border-bottom: 1px solid var(--stroke-strong);
+  border-bottom: 1px solid var(--text-secondary);
   border-radius: var(--radius-s) var(--radius-s) 0 0;
-  background: rgba(255, 255, 255, 0.6);
-  padding: 5px 8px;
+  background: var(--card-hover);
+  padding: 4px 8px;
   min-height: 30px;
   font: inherit;
-  font-size: 0.85rem;
+  font-size: 14px;
   color: var(--text);
   transition:
-    border-color 120ms ease,
-    background 120ms ease;
+    border-color var(--duration-1) var(--curve-decel),
+    background var(--duration-1) var(--curve-decel);
 }
 .controls input:focus,
 .controls select:focus,
 .modal-content input:focus {
   outline: none;
-  border-bottom: 2px solid var(--accent);
-  background: #fff;
+  border-bottom: 2px solid var(--text);
+  background: var(--card-solid);
   margin-bottom: -1px;
+}
+.controls select:focus,
+.controls input:focus {
+  border-bottom-color: var(--text);
 }
 .controls select:hover,
 .controls input:hover {
-  background: #fff;
-  border-bottom-color: var(--text-secondary);
+  background: var(--card-solid);
+  border-bottom-color: var(--text);
 }
 .status {
   margin-top: 10px;
-  font-size: 0.85rem;
-  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-tertiary);
 }
 .status.error {
   color: var(--error);
@@ -219,12 +246,20 @@ main {
   color: var(--success);
   font-weight: 600;
 }
+/* Tabs — Fluent 2 underline pattern */
 .tabs {
   display: flex;
   gap: 4px;
   border-bottom: 1px solid var(--stroke-strong);
   margin: 4px 2px 14px;
   padding: 0 6px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar {
+  display: none;
 }
 .tabs button {
   appearance: none;
@@ -232,18 +267,18 @@ main {
   background: transparent;
   padding: 10px 14px 12px;
   font: inherit;
-  font-size: 0.9rem;
+  font-size: 14px;
   color: var(--text-secondary);
   cursor: pointer;
   position: relative;
   border-radius: var(--radius-s) var(--radius-s) 0 0;
   transition:
-    color 120ms ease,
-    background 120ms ease;
+    color var(--duration-1) var(--curve-decel),
+    background var(--duration-1) var(--curve-decel);
 }
 .tabs button:hover {
   color: var(--text);
-  background: rgba(0, 0, 0, 0.04);
+  background: var(--card-hover);
 }
 .tabs button:focus-visible {
   outline: 2px solid var(--text);
@@ -259,20 +294,26 @@ main {
   left: 12px;
   right: 12px;
   bottom: -1px;
-  height: 2.5px;
+  height: 2px;
   border-radius: 2px;
   background: var(--accent);
 }
 .tab-content h2 {
-  font-size: 1.05rem;
+  font-family:
+    "Segoe UI Variable Display", "Segoe UI", "Malgun Gothic", system-ui,
+    sans-serif;
+  font-size: 16px; /* Subtitle2 */
+  line-height: 22px;
+  font-weight: 600;
   margin: 8px 0;
 }
 .tab-content h3 {
-  font-size: 0.9rem;
+  font-size: 14px;
+  font-weight: 600;
   margin: 14px 0 8px;
 }
 .summary {
-  font-size: 0.82rem;
+  font-size: 12px;
   color: var(--text-secondary);
   margin-bottom: 10px;
   line-height: 1.6;
@@ -288,25 +329,27 @@ main {
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.78rem;
+  font-size: 12px;
+  line-height: 16px;
 }
 .data-table th,
 .data-table td {
   border-bottom: 1px solid var(--stroke);
-  padding: 5px 9px;
+  padding: 6px 9px;
   text-align: center;
   white-space: nowrap;
 }
 .data-table thead th {
-  background: rgba(249, 249, 249, 0.95);
+  background: var(--mica);
   position: sticky;
   top: 0;
   font-weight: 600;
   color: var(--text-secondary);
   box-shadow: inset 0 -1px 0 var(--stroke-strong);
+  z-index: 1;
 }
 .data-table tbody tr:hover td {
-  background: rgba(0, 103, 192, 0.045);
+  background: var(--accent-tint);
 }
 .data-table td.left {
   text-align: left;
@@ -322,14 +365,14 @@ canvas {
 textarea {
   width: 100%;
   font-family: "Cascadia Mono", Consolas, "Courier New", monospace;
-  font-size: 0.76rem;
+  font-size: 12px;
   border: 1px solid var(--stroke-strong);
   border-radius: var(--radius-s);
   padding: 10px;
   box-sizing: border-box;
   white-space: pre;
   overflow: auto;
-  background: #fff;
+  background: var(--card-solid);
   resize: vertical;
 }
 textarea:focus {
@@ -340,6 +383,7 @@ textarea:focus {
 textarea::placeholder {
   color: var(--text-disabled);
 }
+/* Modal dialog — Fluent 2 acrylic surface */
 .modal {
   position: fixed;
   inset: 0;
@@ -368,11 +412,18 @@ textarea::placeholder {
 }
 .modal-content h2 {
   margin: 0 0 8px;
-  font-size: 1.1rem;
+  font-family:
+    "Segoe UI Variable Display", "Segoe UI", "Malgun Gothic", system-ui,
+    sans-serif;
+  font-size: 16px;
+  line-height: 22px;
   font-weight: 600;
 }
+.modal-content p {
+  margin: 6px 0 10px;
+}
 .modal-narrow {
-  max-width: 460px;
+  max-width: 420px;
 }
 .cell-input {
   width: 58px;
@@ -381,7 +432,7 @@ textarea::placeholder {
 footer {
   text-align: center;
   color: var(--text-disabled);
-  font-size: 0.75rem;
+  font-size: 12px;
   padding: 20px;
 }
 .wiz-step {
@@ -396,7 +447,7 @@ footer {
   gap: 6px;
   align-items: center;
   color: var(--text-secondary);
-  font-size: 0.85rem;
+  font-size: 14px;
 }
 .wiz-layout {
   display: flex;
@@ -423,7 +474,7 @@ footer {
   gap: 8px;
   align-items: center;
   color: var(--text-secondary);
-  font-size: 0.85rem;
+  font-size: 14px;
 }
 .wiz-fields input {
   width: 90px;
@@ -440,7 +491,7 @@ footer {
   justify-content: flex-end;
 }
 .data-table tr.wiz-active td {
-  background: rgba(0, 103, 192, 0.1);
+  background: var(--accent-tint);
   font-weight: 600;
 }
 .modal-wide {
@@ -459,19 +510,19 @@ footer {
   border-radius: var(--radius-s);
   background: transparent;
   font: inherit;
-  font-size: 0.78rem;
+  font-size: 12px;
   text-align: center;
   color: var(--text);
   transition:
-    background 100ms ease,
-    border-color 100ms ease;
+    background var(--duration-1) var(--curve-decel),
+    border-color var(--duration-1) var(--curve-decel);
 }
 .grid-input:hover {
-  background: rgba(0, 0, 0, 0.04);
+  background: var(--card-hover);
 }
 .grid-input:focus {
   outline: none;
-  background: #fff;
+  background: var(--card-solid);
   border-color: var(--accent);
   box-shadow: 0 0 0 1px var(--accent);
 }
@@ -486,17 +537,25 @@ footer {
 .row-del {
   min-height: 24px;
   padding: 2px 8px;
-  font-size: 0.75rem;
+  font-size: 12px;
   color: var(--text-secondary);
 }
-.tabs {
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+.controls .summary {
+  flex-basis: 100%;
+  margin: 2px 0 0;
 }
-.tabs::-webkit-scrollbar {
-  display: none;
+.chart-tip {
+  position: fixed;
+  z-index: 200;
+  background: rgba(36, 36, 36, 0.94);
+  color: #fff;
+  font-size: 12px;
+  line-height: 16px;
+  padding: 7px 10px;
+  border-radius: var(--radius-s);
+  pointer-events: none;
+  white-space: pre;
+  box-shadow: var(--shadow-8);
 }
 @media (max-width: 1024px) {
   .modal-wide {
@@ -511,7 +570,8 @@ footer {
     padding: 14px 16px 8px;
   }
   header h1 {
-    font-size: 1.25rem;
+    font-size: 20px;
+    line-height: 28px;
   }
   main {
     padding: 2px 8px 16px;
@@ -531,7 +591,8 @@ footer {
     white-space: nowrap;
   }
   .tab-content h2 {
-    font-size: 1rem;
+    font-size: 14px;
+    line-height: 20px;
   }
   .table-wrap {
     max-height: 52vh;
@@ -558,9 +619,10 @@ footer {
   }
   footer {
     padding: 12px;
-    font-size: 0.7rem;
+    font-size: 11px;
   }
 }
+/* Touch targets — Fluent 2 minimum 40px on coarse pointers */
 @media (pointer: coarse) {
   .btn {
     min-height: 40px;
@@ -570,16 +632,16 @@ footer {
     padding: 12px 14px;
   }
   .data-table {
-    font-size: 0.8rem;
+    font-size: 14px;
   }
   .data-table th,
   .data-table td {
-    padding: 7px 10px;
+    padding: 8px 10px;
   }
   .grid-input {
     min-width: 40px;
     padding: 6px 2px;
-    font-size: 0.85rem;
+    font-size: 14px;
   }
   .row-del {
     min-height: 32px;
@@ -590,34 +652,4 @@ footer {
   .controls select {
     min-height: 38px;
   }
-}
-.controls .summary {
-  flex-basis: 100%;
-  margin: 2px 0 0;
-}
-.controls label {
-  white-space: nowrap;
-}
-.modal-content p {
-  margin: 6px 0 10px;
-}
-.modal-narrow {
-  max-width: 420px;
-}
-.wiz-step {
-  gap: 10px;
-  padding: 2px 0 10px;
-}
-.chart-tip {
-  position: fixed;
-  z-index: 200;
-  background: rgba(27, 27, 27, 0.92);
-  color: #fff;
-  font-size: 0.78rem;
-  line-height: 1.5;
-  padding: 7px 10px;
-  border-radius: var(--radius-s);
-  pointer-events: none;
-  white-space: pre;
-  box-shadow: var(--shadow-8);
 }

@@ -15,7 +15,7 @@
       href="icons/icon-192.png"
     />
     <link rel="manifest" href="manifest.json" />
-    <meta name="theme-color" content="#0067c0" />
+    <meta name="theme-color" content="#0f6cbd" />
     <link rel="apple-touch-icon" href="icons/icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
   </head>
@@ -32,9 +32,15 @@
           <button id="loadDemo" class="btn accent">샘플 데이터로 보기</button>
           <button id="newData" class="btn">새 응답자료 만들기</button>
           <button id="editData" class="btn">데이터 편집</button>
-          <button id="importFile" class="btn">불러오기 (.csv / .dat)</button>
+          <div class="menu-wrap">
+            <button id="importBtn" class="btn">불러오기 ▾</button>
+            <div id="importMenu" class="menu" hidden>
+              <button class="menu-item" id="importCsv">CSV (.csv)</button>
+              <button class="menu-item" id="importDat">DAT (.dat)</button>
+            </div>
+          </div>
           <input type="file" id="fileInput" accept=".csv,.dat,.txt" hidden />
-          <div class="export-menu">
+          <div class="menu-wrap">
             <button id="exportBtn" class="btn">내보내기 ▾</button>
             <div id="exportMenu" class="menu" hidden>
               <button class="menu-item" id="exportCsv">CSV (.csv)</button>

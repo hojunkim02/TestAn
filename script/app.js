@@ -495,7 +495,7 @@ const renderChart = () => {
           ? "검사점수의 도수"
           : "검사점수의 누가 백분율 (%)";
 
-  ctx.fillStyle = "#1f2937";
+  ctx.fillStyle = "#242424";
   ctx.font = "600 13px 'Segoe UI', sans-serif";
   ctx.fillText(title, padL, 18);
 
@@ -505,12 +505,12 @@ const renderChart = () => {
   for (let i = 0; i <= steps; i++) {
     const v = minV + ((maxV - minV) * i) / steps;
     const yy = y(v);
-    ctx.strokeStyle = i === 0 ? "#9ca3af" : "#e5e7eb";
+    ctx.strokeStyle = i === 0 ? "#D1D1D1" : "#E0E0E0";
     ctx.beginPath();
     ctx.moveTo(padL, yy);
     ctx.lineTo(w - padR, yy);
     ctx.stroke();
-    ctx.fillStyle = "#6b7280";
+    ctx.fillStyle = "#616161";
     ctx.textAlign = "right";
     ctx.fillText(fmt(v), padL - 6, yy + 3);
   }
@@ -518,7 +518,7 @@ const renderChart = () => {
 
   /** 데이터 포인트 위에 값을 표시한다. */
   const valText = (v, x, yy) => {
-    ctx.fillStyle = "#374151";
+    ctx.fillStyle = "#424242";
     ctx.font = "600 10px 'Segoe UI', sans-serif";
     ctx.textAlign = "center";
     ctx.fillText(fmt(v), x, yy - 4);
@@ -531,7 +531,7 @@ const renderChart = () => {
     const px = (i) => padL + i * dx;
     const step = Math.max(1, Math.ceil(values.length / 20));
     const st = currentResult.stats;
-    ctx.strokeStyle = "#2563eb";
+    ctx.strokeStyle = "#0F6CBD";
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     values.forEach((v, i) =>
@@ -550,11 +550,11 @@ const renderChart = () => {
       });
       ctx.beginPath();
       ctx.arc(px(i), y(v), 2.5, 0, Math.PI * 2);
-      ctx.fillStyle = "#2563eb";
+      ctx.fillStyle = "#0F6CBD";
       ctx.fill();
       if (i % step === 0) {
         valText(v, px(i), y(v));
-        ctx.fillStyle = "#6b7280";
+        ctx.fillStyle = "#616161";
         ctx.font = "10px 'Segoe UI', sans-serif";
         ctx.textAlign = "center";
         ctx.fillText(labels[i], px(i), h - padB + 14);
@@ -578,11 +578,11 @@ const renderChart = () => {
       });
       const yy = y(Math.max(v, 0));
       const bh = y(Math.min(v, 0)) - yy;
-      ctx.fillStyle = v < 0 ? "#dc2626" : "#2563eb";
+      ctx.fillStyle = v < 0 ? "#C42B1C" : "#0F6CBD";
       ctx.fillRect(x, yy, bw, Math.max(bh, 1));
       if (values.length <= 40) {
         valText(v, x + bw / 2, yy);
-        ctx.fillStyle = "#6b7280";
+        ctx.fillStyle = "#616161";
         ctx.font = "10px 'Segoe UI', sans-serif";
         ctx.textAlign = "center";
         ctx.fillText(labels[i], x + bw / 2, h - padB + 14);
@@ -659,6 +659,7 @@ document.addEventListener("keydown", (e) => {
       .querySelectorAll(".modal:not([hidden])")
       .forEach((m) => (m.hidden = true));
     toggleExportMenu(false);
+    toggleImportMenu(false);
   }
 });
 $("loadDemo").addEventListener("click", loadDemo);
@@ -715,7 +716,22 @@ const importFile = async (file) => {
   }
 };
 
-$("importFile").addEventListener("click", () => $("fileInput").click());
+// 불러오기 드롭다운 메뉴
+const importMenu = $("importMenu");
+const toggleImportMenu = (show = !importMenu.hidden) => {
+  importMenu.hidden = show;
+};
+$("importBtn").addEventListener("click", () => {
+  toggleImportMenu();
+  toggleExportMenu(false);
+});
+const pickFile = (accept) => {
+  toggleImportMenu(false);
+  $("fileInput").accept = accept;
+  $("fileInput").click();
+};
+$("importCsv").addEventListener("click", () => pickFile(".csv,.txt"));
+$("importDat").addEventListener("click", () => pickFile(".dat,.txt"));
 $("fileInput").addEventListener("change", (e) => {
   const file = e.target.files[0];
   e.target.value = "";
@@ -736,7 +752,10 @@ const exportMenu = $("exportMenu");
 const toggleExportMenu = (show = !exportMenu.hidden) => {
   exportMenu.hidden = show;
 };
-$("exportBtn").addEventListener("click", () => toggleExportMenu());
+$("exportBtn").addEventListener("click", () => {
+  toggleExportMenu();
+  toggleImportMenu(false);
+});
 $("exportCsv").addEventListener("click", () => {
   toggleExportMenu(false);
   exportAs((d) =>
@@ -754,7 +773,10 @@ $("exportDat").addEventListener("click", () => {
   );
 });
 document.addEventListener("click", (e) => {
-  if (!e.target.closest(".export-menu")) toggleExportMenu(false);
+  if (!e.target.closest(".menu-wrap")) {
+    toggleExportMenu(false);
+    toggleImportMenu(false);
+  }
 });
 $("newCancel").addEventListener("click", () => ($("newModal").hidden = true));
 $("editData").addEventListener("click", () => openEditModal(null));
