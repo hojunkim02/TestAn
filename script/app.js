@@ -273,11 +273,10 @@ const renderOptions = () => {
   $("optionTable").innerHTML = html;
 }
 const renderChart = () => {
-
   const canvas = $("chart");
   const dpr = window.devicePixelRatio || 1;
   const w = Math.max(320, canvas.getBoundingClientRect().width || 900);
-  const h = w < 640 ? 300 : 400;   // 모바일에서는 차트 높이 축소
+  const h = w < 640 ? 300 : 400;
   canvas.width = Math.round(w * dpr);
   canvas.height = Math.round(h * dpr);
   canvas.style.height = h + "px";
@@ -366,8 +365,6 @@ const renderGraphTable = () => {
   }
   $("graphTable").innerHTML = html;
 }
-
-// 이벤트 등록 (모든 정의 후 실행)
 document.querySelectorAll(".modal").forEach(m => m.addEventListener("click", e => { if (e.target === m) m.hidden = true; }));
 document.addEventListener("keydown", e => {
   if (e.key === "Escape") document.querySelectorAll(".modal:not([hidden])").forEach(m => { m.hidden = true; });

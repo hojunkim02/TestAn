@@ -1,16 +1,11 @@
 "use strict";
-
-// 테스트: sample-data CSV 전체 분석 + 원본 매뉴얼 골든 수치 + CSV/.dat 왕복
 const fs = require("fs");
 const path = require("path");
 const { parseDataCsv, buildDataCsv, parseDatText, buildDatText } = require("./data.js");
 const { analyze } = require("./analysis.js");
-
 const dir = path.join(__dirname, "..", "sample-data");
 const files = fs.readdirSync(dir).filter(f => f.endsWith(".csv")).sort();
-
 let pass = 0, fail = 0;
-
 files.forEach(f => {
   const text = fs.readFileSync(path.join(dir, f), "utf8");
   try {
@@ -25,8 +20,6 @@ files.forEach(f => {
     fail++;
   }
 });
-
-// 골든 테스트: 원본 매뉴얼(그림 14~16)의 answer 자료 분석 수치와 일치 검증
 const ansData = parseDataCsv(fs.readFileSync(path.join(dir, "answer.csv"), "utf8"));
 const ansResult = analyze(ansData);
 const st = ansResult.stats;
@@ -63,8 +56,6 @@ golden.forEach(([name, val, exp]) => {
   if (Math.abs(val - exp) < 0.0005) { console.log(`OK  골든 ${name}: ${val}`); pass++; }
   else { console.log(`FAIL 골든 ${name}: ${val} (기대 ${exp})`); goldenFail++; fail++; }
 });
-
-// CSV 왕복: data → CSV → parse → 같은 통계
 const csvText = buildDataCsv(ansData);
 const reData = parseDataCsv(csvText);
 const reResult = analyze(reData);
@@ -74,8 +65,6 @@ const same = Math.abs(reResult.stats.mean - st.mean) < 1e-9 &&
   reResult.items.every((it, i) => it.difficulty === ansResult.items[i].difficulty);
 if (same) { console.log(`OK  CSV 왕복: 평균 ${reResult.stats.mean.toFixed(3)}, α ${reResult.stats.reliability.toFixed(3)} 동일`); pass++; }
 else { console.log("FAIL CSV 왕복 불일치"); fail++; }
-
-// .dat 왕복: data → .dat 텍스트 → parse → 같은 통계 (편집 화면·외부 파일 경로)
 const datText = buildDatText(ansData);
 const datData = parseDatText(datText);
 const datResult = analyze(datData);
@@ -86,9 +75,6 @@ const datOk = Math.abs(round(datResult.stats.mean, 3) - 45.059) < 0.0005 &&
   datData.students.every((s, i) => s.id === ansData.students[i].id);
 if (datOk) { console.log(`OK  .dat 왕복: 평균 ${datResult.stats.mean.toFixed(3)}, α ${datResult.stats.reliability.toFixed(3)} (골든 일치)`); pass++; }
 else { console.log("FAIL .dat 왕복 불일치"); fail++; }
-
-// 매뉴얼 1부 예제 검증 (표 3~8, 표 10)
-// 표 3: 5문항 검사 — 시학 10000(총점1), 지헤 11100(총점3), 유진 11101(총점4)
 const mkData = (resps) => ({
   nItems: resps[0].length, key: resps[0].split("").map(() => "1"),
   numOptions: resps[0].split("").map(() => 5),
@@ -96,8 +82,8 @@ const mkData = (resps) => ({
   weights: new Array(resps[0].length).fill(1),
   students: ["시학", "지헤", "유진"].map((id, i) => ({ id, resp: resps[i].split("") }))
 });
-const ex5 = analyze(mkData(["10000", "11100", "11101"]));      // 표 3
-const ex6 = analyze(mkData(["100001", "111000", "111010"]));   // 표 7 (6번 문항 추가 가정)
+const ex5 = analyze(mkData(["10000", "11100", "11101"]));
+const ex6 = analyze(mkData(["100001", "111000", "111010"]));
 const manualExamples = [
   ["표1 난이도 P=R/N (1번, 전원 정답)", ex5.items[0].difficulty, 1.0],
   ["표4 문항2 변별도 r=.94", round(ex5.items[1].pointBiserial, 2), 0.94],
@@ -110,6 +96,5 @@ manualExamples.forEach(([name, val, exp]) => {
   if (Math.abs(val - exp) < 0.005) { console.log(`OK  매뉴얼 예제 ${name}: ${val}`); pass++; }
   else { console.log(`FAIL 매뉴얼 예제 ${name}: ${val} (기대 ${exp})`); fail++; }
 });
-
 if (fail > 0) { console.error(`\n${fail}개 실패`); process.exit(1); }
 console.log(`\n모든 테스트 통과 (${pass}개, 골든 ${golden.length - goldenFail}/${golden.length})`);

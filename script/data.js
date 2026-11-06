@@ -156,10 +156,8 @@ const buildScaffoldDat = (nItems, idWidth, keys, options, flags) => {
   lines.push(flags.join(""));
   return lines.join("\r\n") + "\r\n";
 }
-
 if (typeof module !== "undefined") {
 }
-
 if (typeof module !== "undefined") {
   module.exports = { parseDataCsv, buildDataCsv, buildScaffoldCsv, parseDatText, buildDatText, buildScaffoldDat };
 }
