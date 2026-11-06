@@ -99,9 +99,14 @@ const gridKeyNav = (e, tableId) => {
       target = metas[metas.length - 1] || null;
     }
   }
-  if (target) target.focus();
+  if (target) { target.focus(); target.select(); }
 }
 let editModel = null;
+const nextStudentId = () => {
+  const nums = editModel.students.map(s => /^\d+$/.test(s.id) ? parseInt(s.id, 10) : 0);
+  const width = Math.max(4, ...editModel.students.filter(s => /^\d+$/.test(s.id)).map(s => s.id.length));
+  return String(Math.max(0, ...nums) + 1).padStart(width, "0");
+};
 const openEditModal = (pending) => {
   if (pending) {
     editModel = { nItems: pending.nItems, key: [...pending.key], numOptions: [...pending.numOptions],
@@ -283,9 +288,9 @@ const renderChart = () => {
   const ctx = canvas.getContext("2d");
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, w, h);
-  ctx.lineWidth = 1;
   const mode = $("graphMode").value;
-  let labels, values;
+
+  let labels, values, fmt;
   if (mode === "score" || mode === "cum") {
     const st = currentResult.stats;
     const counts = {};
@@ -294,62 +299,101 @@ const renderChart = () => {
     for (let sc = st.min; sc <= st.high; sc++) labels.push(sc);
     if (mode === "score") {
       values = labels.map(l => counts[l] || 0);
+      fmt = v => v.toFixed(0);
     } else {
       let cum = 0;
       values = labels.map(l => { cum += counts[l] || 0; return st.n ? cum / st.n * 100 : 0; });
+      fmt = v => v.toFixed(1);
     }
   } else {
     labels = currentResult.items.map(it => it.index);
-    values = currentResult.items.map(it =>
-      mode === "diff" ? it.difficulty * 100 : it.discrimination);
+    values = currentResult.items.map(it => mode === "diff" ? it.difficulty * 100 : it.discrimination);
+    fmt = v => v.toFixed(1);
   }
-  const pad = 50, bw = Math.max(2, (w - pad * 2) / values.length - 4);
+
+  const asLine = mode === "score" || mode === "cum";
+  const padL = 52, padR = 20, padT = 34, padB = 40;
+  const plotW = w - padL - padR, plotH = h - padT - padB;
   const maxV = Math.max(...values, 0.001);
+  const minV = Math.min(0, ...values);
+  const y = v => padT + plotH * (1 - (v - minV) / (maxV - minV || 1));
   const title = mode === "diff" ? "문항 난이도 (정답률 %)" :
     mode === "disc" ? "문항 변별도 (D)" :
-    mode === "score" ? "검사점수의 도수 (선 그래프)" : "검사점수의 누가 백분율 (선 그래프)";
-  const asLine = mode === "score" || mode === "cum";
+    mode === "score" ? "검사점수의 도수" : "검사점수의 누가 백분율 (%)";
+
   ctx.fillStyle = "#1f2937";
-  ctx.font = "13px sans-serif";
-  ctx.fillText(title, pad, 20);
+  ctx.font = "600 13px 'Segoe UI', sans-serif";
+  ctx.fillText(title, padL, 18);
+
+  // y축 눈금·그리드 + 수치 라벨
+  const steps = 5;
+  ctx.font = "10px 'Segoe UI', sans-serif";
+  for (let i = 0; i <= steps; i++) {
+    const v = minV + (maxV - minV) * i / steps;
+    const yy = y(v);
+    ctx.strokeStyle = i === 0 ? "#9ca3af" : "#e5e7eb";
+    ctx.beginPath();
+    ctx.moveTo(padL, yy);
+    ctx.lineTo(w - padR, yy);
+    ctx.stroke();
+    ctx.fillStyle = "#6b7280";
+    ctx.textAlign = "right";
+    ctx.fillText(fmt(v), padL - 6, yy + 3);
+  }
+  ctx.textAlign = "left";
+
+  const valText = (v, x, yy) => {
+    ctx.fillStyle = "#374151";
+    ctx.font = "600 10px 'Segoe UI', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(fmt(v), x, yy - 4);
+    ctx.textAlign = "left";
+  };
+
   if (asLine) {
+    const dx = values.length > 1 ? plotW / (values.length - 1) : 0;
+    const px = i => padL + i * dx;
     ctx.strokeStyle = "#2563eb";
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    values.forEach((v, i) => {
-      const x = pad + i * ((w - pad * 2) / Math.max(1, values.length - 1));
-      const y = h - pad - (h - pad * 2) * (v / maxV);
-      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    });
+    values.forEach((v, i) => i === 0 ? ctx.moveTo(px(i), y(v)) : ctx.lineTo(px(i), y(v)));
     ctx.stroke();
-    ctx.fillStyle = "#6b7280";
-    ctx.font = "10px sans-serif";
-    const step = Math.max(1, Math.ceil(values.length / 25));
+    const step = Math.max(1, Math.ceil(values.length / 20));
     values.forEach((v, i) => {
+      ctx.beginPath();
+      ctx.arc(px(i), y(v), 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = "#2563eb";
+      ctx.fill();
       if (i % step === 0) {
-        const x = pad + i * ((w - pad * 2) / Math.max(1, values.length - 1));
-        ctx.fillText(labels[i], x - 6, h - pad + 14);
+        valText(v, px(i), y(v));
+        ctx.fillStyle = "#6b7280";
+        ctx.font = "10px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(labels[i], px(i), h - padB + 14);
+        ctx.textAlign = "left";
       }
     });
   } else {
+    const colW = plotW / values.length;
+    const bw = Math.max(2, colW - 4);
     values.forEach((v, i) => {
-      const x = pad + i * ((w - pad * 2) / values.length) + 2;
-      const bh = (h - pad * 2) * (v / maxV);
-      ctx.fillStyle = mode === "disc" ? (v < 0 ? "#dc2626" : "#2563eb") : "#2563eb";
-      ctx.fillRect(x, h - pad - bh, bw, bh);
+      const x = padL + i * colW + 2;
+      const yy = y(Math.max(v, 0));
+      const bh = y(Math.min(v, 0)) - yy;
+      ctx.fillStyle = v < 0 ? "#dc2626" : "#2563eb";
+      ctx.fillRect(x, yy, bw, Math.max(bh, 1));
+      if (values.length <= 40) valText(v, x + bw / 2, yy);
       if (values.length <= 40) {
         ctx.fillStyle = "#6b7280";
-        ctx.font = "10px sans-serif";
-        ctx.fillText(labels[i], x, h - pad + 14);
+        ctx.font = "10px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(labels[i], x + bw / 2, h - padB + 14);
+        ctx.textAlign = "left";
       }
     });
   }
-  ctx.strokeStyle = "#d9dde3";
-  ctx.beginPath();
-  ctx.moveTo(pad, h - pad);
-  ctx.lineTo(w - pad / 2, h - pad);
-  ctx.stroke();
-}
+};
+
 const renderGraphTable = () => {
   if (!currentResult) { $("graphTable").innerHTML = ""; return; }
   const st = currentResult.stats;
@@ -375,6 +419,15 @@ $("newBuild").addEventListener("click", wizApplyCount);
 $("newGenerate").addEventListener("click", wizConfirm);
 $("newTable").addEventListener("keydown", e => gridKeyNav(e, "newTable"));
 $("editTable").addEventListener("keydown", e => gridKeyNav(e, "editTable"));
+const digitOnly = e => {
+  const t = e.target;
+  if (t.tagName !== "INPUT" || !t.classList.contains("grid-input")) return;
+  if ((t.id || "").startsWith("editFlag") || t.dataset.col === "flag") return;
+  const v = t.value.replace(/[^0-9]/g, "");
+  if (v !== t.value) t.value = v;
+};
+$("newTable").addEventListener("input", digitOnly);
+$("editTable").addEventListener("input", digitOnly);
 $("importDat").addEventListener("click", () => $("datFile").click());
 $("datFile").addEventListener("change", e => {
   const file = e.target.files[0];
@@ -398,7 +451,7 @@ $("exportDat").addEventListener("click", () => {
 });
 $("newCancel").addEventListener("click", () => $("newModal").hidden = true);
 $("editData").addEventListener("click", () => openEditModal(null));
-$("addStudent").addEventListener("click", () => { editModel.students.push({ id: "", resp: new Array(editModel.nItems).fill("") }); renderEditGrid(); });
+$("addStudent").addEventListener("click", () => { editModel.students.push({ id: nextStudentId(), resp: new Array(editModel.nItems).fill("") }); renderEditGrid(); });
 $("editApply").addEventListener("click", applyEdit);
 $("editCancel").addEventListener("click", () => $("editModal").hidden = true);
 $("aboutBtn").addEventListener("click", () => $("aboutModal").hidden = false);
