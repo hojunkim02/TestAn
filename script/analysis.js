@@ -1,1 +1,141 @@
-"use strict";const analyze=r=>{const{nItems:t,key:e,weights:n,scored:o,students:a}=r,s=a.length;if(!s)throw new Error("분석할 학생 데이터가 없습니다.");let i=0,c=0;for(let r=0;r<t;r++)o[r]&&(i++,c+=n[r]);const p=new Uint32Array(t),l=new Uint32Array(t),w=new Float64Array(t),u=new Float64Array(t),m=Array.from({length:t},()=>new Map);let f=0,d=0,y=1/0,h=-1/0;for(const r of a){let a=0,s=0;r.correct=new Uint8Array(t);for(let i=0;i<t;i++){const t=r.resp[i],c=o[i]&&" "!==t&&t===e[i];if(c&&(a+=n[i],s++,r.correct[i]=1),o[i]){c&&p[i]++," "!==t&&l[i]++;const r=c?n[i]:0;w[i]+=r,u[i]+=r*r}const f=" "===t?"기타":t;let d=m[i].get(f);d||(d={option:f,count:0,sumY:0,upper:0,lower:0},m[i].set(f,d)),d.count++}r.raw=a,r.max=c,r.percent=c?a/c*100:0,r.correctCount=s,f+=a,d+=a*a,a<y&&(y=a),a>h&&(h=a)}const A=[...a].sort((r,t)=>t.raw-r.raw);A.forEach((r,t)=>{r.rank=t>0&&r.raw===A[t-1].raw?A[t-1].rank:t+1});const x=Math.max(1,Math.round(.27*s)),M=A[Math.min(x,s)-1].raw,k=A[Math.max(0,s-x)].raw,U=new Float64Array(t),g=new Uint32Array(t),v=new Uint32Array(t),q=f/s;let D=0,_=0,b=1/0,z=-1/0,E=1/0,F=-1/0,I=0,Y=0;for(const r of a){const e=r.raw-q;I+=e*e*e,Y+=e*e*e*e;const n=r.raw>=M,o=r.raw<=k;n&&(D++,r.raw<b&&(b=r.raw),r.raw>z&&(z=r.raw)),o&&(_++,r.raw<E&&(E=r.raw),r.raw>F&&(F=r.raw));for(let e=0;e<t;e++){const t=m[e].get(" "===r.resp[e]?"기타":r.resp[e]);t.sumY+=r.raw,n&&(t.upper++,g[e]+=r.correct[e]),o&&(t.lower++,v[e]+=r.correct[e]),r.correct[e]&&(U[e]+=r.raw)}}const K=Math.sqrt(Math.max(0,d/s-q*q)),L=s>1?(d-f*f/s)/(s-1):0,B=new Array(t);let C=0;const O=s/(s-1||1);for(let n=0;n<t;n++){const t=p[n]/s,a=r.numOptions[n]||0,i={index:n+1,key:e[n],scored:o[n],correct:p[n],answered:l[n],blank:s-l[n],difficulty:t,discrimination:(D?g[n]/D:0)-(_?v[n]/_:0),pointBiserial:pearson(w[n],u[n],U[n],f,d,s),pUpper:D?g[n]/D:0,pLower:_?v[n]/_:0,attractiveness:a>1?(1-t)/(a-1):0,options:[...m[n].values()].map(r=>({option:r.option,isKey:" "!==e[n]&&r.option===e[n],propAll:r.count/s,propUpper:D?r.upper/D:0,propLower:_?r.lower/_:0,pbis:pearson(r.count,r.count,r.sumY,f,d,s)})).sort((r,t)=>t.propAll-r.propAll)};i.options.forEach(r=>{r.attractive=!r.isKey&&r.propAll>i.attractiveness}),o[n]&&(i.s_i2=(u[n]-w[n]*w[n]/s)/s,C+=i.s_i2),B[n]=i}const j=i>=2&&L>0?i/(i-1)*(1-C*O/L):0;for(const r of B){if(i<3||!r.scored){r.alphaIfDeleted=0;continue}const t=r.index-1,e=f-w[t],n=d-2*U[t]+u[t],o=s>1?(n-e*e/s)/(s-1):0,a=i-1;r.alphaIfDeleted=o>0?a/(a-1)*(1-(C-r.s_i2)*O/o):0,delete r.s_i2}const G=s%2?A[s>>1].raw:(A[(s>>1)-1].raw+A[s>>1].raw)/2,H=[I/s/(K||1)**3,Y/s/(K||1)**4-3];return{students:a,items:B,upper:{n:D,min:D?b:0,max:D?z:0},lower:{n:_,min:_?E:0,max:_?F:0},stats:{n:s,mean:q,sd:K,variance:K*K,max:c,min:y,high:h,median:G,skewness:K?H[0]:0,kurtosis:K?H[1]:0,meanDifficulty:t?B.reduce((r,t)=>r+t.difficulty,0)/t:0,meanDiscrimination:t?B.reduce((r,t)=>r+t.discrimination,0)/t:0,reliability:j,sem:K*Math.sqrt(Math.max(0,1-j))}}},pearson=(r,t,e,n,o,a)=>{const s=a*t-r*r,i=a*o-n*n;return s>0&&i>0?(a*e-r*n)/(Math.sqrt(s)*Math.sqrt(i)):0};"undefined"!=typeof module&&(module.exports={analyze:analyze});
+"use strict";
+const analyze = (data) => {
+  const { nItems, key, weights, scored, students } = data;
+  const N = students.length;
+  if (!N) throw new Error("분석할 학생 데이터가 없습니다.");
+  let k = 0, maxScore = 0;
+  for (let j = 0; j < nItems; j++) if (scored[j]) { k++; maxScore += weights[j]; }
+  const R = new Uint32Array(nItems), A = new Uint32Array(nItems);
+  const sX = new Float64Array(nItems), sX2 = new Float64Array(nItems);
+  const opts = Array.from({ length: nItems }, () => new Map());
+  let sY = 0, sY2 = 0, minS = Infinity, maxS = -Infinity;
+  for (const s of students) {
+    let Y = 0, nCorrect = 0;
+    s.correct = new Uint8Array(nItems);
+    for (let j = 0; j < nItems; j++) {
+      const resp = s.resp[j];
+      const hit = scored[j] && resp !== " " && resp === key[j];
+      if (hit) { Y += weights[j]; nCorrect++; s.correct[j] = 1; }
+      if (scored[j]) {
+        if (hit) R[j]++;
+        if (resp !== " ") A[j]++;
+        const x = hit ? weights[j] : 0;
+        sX[j] += x; sX2[j] += x * x;
+      }
+      const o = resp === " " ? "기타" : resp;
+      let a = opts[j].get(o);
+      if (!a) { a = { option: o, count: 0, sumY: 0, upper: 0, lower: 0 }; opts[j].set(o, a); }
+      a.count++;
+    }
+    s.raw = Y; s.max = maxScore;
+    s.percent = maxScore ? Y / maxScore * 100 : 0;
+    s.correctCount = nCorrect;
+    sY += Y; sY2 += Y * Y;
+    if (Y < minS) minS = Y;
+    if (Y > maxS) maxS = Y;
+  }
+  const sorted = [...students].sort((a, b) => b.raw - a.raw);
+  sorted.forEach((s, i) => {
+    s.rank = i > 0 && s.raw === sorted[i - 1].raw ? sorted[i - 1].rank : i + 1;
+  });
+  const cut = Math.max(1, Math.round(N * 0.27));
+  const upperCut = sorted[Math.min(cut, N) - 1].raw;
+  const lowerCut = sorted[Math.max(0, N - cut)].raw;
+  const sXY = new Float64Array(nItems);
+  const cU = new Uint32Array(nItems), cL = new Uint32Array(nItems);
+  const meanY = sY / N;
+  let nU = 0, nL = 0, minU = Infinity, maxU = -Infinity, minL = Infinity, maxL = -Infinity;
+  let m3 = 0, m4 = 0;
+  for (const s of students) {
+    const d = s.raw - meanY;
+    m3 += d * d * d;
+    m4 += d * d * d * d;
+    const u = s.raw >= upperCut, l = s.raw <= lowerCut;
+    if (u) { nU++; if (s.raw < minU) minU = s.raw; if (s.raw > maxU) maxU = s.raw; }
+    if (l) { nL++; if (s.raw < minL) minL = s.raw; if (s.raw > maxL) maxL = s.raw; }
+    for (let j = 0; j < nItems; j++) {
+      const o = opts[j].get(s.resp[j] === " " ? "기타" : s.resp[j]);
+      o.sumY += s.raw;
+      if (u) { o.upper++; cU[j] += s.correct[j]; }
+      if (l) { o.lower++; cL[j] += s.correct[j]; }
+      if (s.correct[j]) sXY[j] += s.raw;
+    }
+  }
+  const s_x = Math.sqrt(Math.max(0, sY2 / N - meanY * meanY));
+  const sX2sample = N > 1 ? (sY2 - sY * sY / N) / (N - 1) : 0;
+  const items = new Array(nItems);
+  let sumSi2 = 0;
+  const scale = N / (N - 1 || 1);
+  for (let j = 0; j < nItems; j++) {
+    const P = R[j] / N;
+    const Q = data.numOptions[j] || 0;
+    const it = {
+      index: j + 1,
+      key: key[j],
+      scored: scored[j],
+      correct: R[j],
+      answered: A[j],
+      blank: N - A[j],
+      difficulty: P,
+      discrimination: (nU ? cU[j] / nU : 0) - (nL ? cL[j] / nL : 0),
+      pointBiserial: pearson(sX[j], sX2[j], sXY[j], sY, sY2, N),
+      pUpper: nU ? cU[j] / nU : 0,
+      pLower: nL ? cL[j] / nL : 0,
+      attractiveness: Q > 1 ? (1 - P) / (Q - 1) : 0,
+      options: [...opts[j].values()].map(o => ({
+        option: o.option,
+        isKey: key[j] !== " " && o.option === key[j],
+        propAll: o.count / N,
+        propUpper: nU ? o.upper / nU : 0,
+        propLower: nL ? o.lower / nL : 0,
+        pbis: pearson(o.count, o.count, o.sumY, sY, sY2, N)
+      })).sort((a, b) => b.propAll - a.propAll)
+    };
+    it.options.forEach(o => { o.attractive = !o.isKey && o.propAll > it.attractiveness; });
+    if (scored[j]) { it.s_i2 = (sX2[j] - sX[j] * sX[j] / N) / N; sumSi2 += it.s_i2; }
+    items[j] = it;
+  }
+  const alpha = k >= 2 && sX2sample > 0
+    ? k / (k - 1) * (1 - sumSi2 * scale / sX2sample) : 0;
+  for (const it of items) {
+    if (k < 3 || !it.scored) { it.alphaIfDeleted = 0; continue; }
+    const j = it.index - 1;
+    const sYx = sY - sX[j];
+    const sY2x = sY2 - 2 * sXY[j] + sX2[j];
+    const varX = N > 1 ? (sY2x - sYx * sYx / N) / (N - 1) : 0;
+    const kk = k - 1;
+    it.alphaIfDeleted = varX > 0
+      ? kk / (kk - 1) * (1 - (sumSi2 - it.s_i2) * scale / varX) : 0;
+    delete it.s_i2;
+  }
+  const med = N % 2 ? sorted[N >> 1].raw : (sorted[(N >> 1) - 1].raw + sorted[N >> 1].raw) / 2;
+  const m = [m3 / N / (s_x || 1) ** 3, m4 / N / (s_x || 1) ** 4 - 3];
+  return {
+    students, items,
+    upper: { n: nU, min: nU ? minU : 0, max: nU ? maxU : 0 },
+    lower: { n: nL, min: nL ? minL : 0, max: nL ? maxL : 0 },
+    stats: {
+      n: N,
+      mean: meanY,
+      sd: s_x,
+      variance: s_x * s_x,
+      max: maxScore,
+      min: minS,
+      high: maxS,
+      median: med,
+      skewness: s_x ? m[0] : 0,
+      kurtosis: s_x ? m[1] : 0,
+      meanDifficulty: nItems ? items.reduce((a, it) => a + it.difficulty, 0) / nItems : 0,
+      meanDiscrimination: nItems ? items.reduce((a, it) => a + it.discrimination, 0) / nItems : 0,
+      reliability: alpha,
+      sem: s_x * Math.sqrt(Math.max(0, 1 - alpha))
+    }
+  };
+}
+const pearson = (sX, sX2, sXY, sY, sY2, N) => {
+  const dX = N * sX2 - sX * sX, dY = N * sY2 - sY * sY;
+  return dX > 0 && dY > 0 ? (N * sXY - sX * sY) / (Math.sqrt(dX) * Math.sqrt(dY)) : 0;
+}
+if (typeof module !== "undefined") {
+  module.exports = { analyze };
+}
