@@ -31,3 +31,4 @@
 .modal-content p{margin:6px 0 10px;}
 .modal-narrow{max-width:420px;}
 .wiz-step{gap:10px;padding:2px 0 10px;}
+.chart-tip{position:fixed;z-index:200;background:rgba(27,27,27,0.92);color:#fff;font-size:0.78rem;line-height:1.5;padding:7px 10px;border-radius:var(--radius-s);pointer-events:none;white-space:pre;box-shadow:var(--shadow-8);}

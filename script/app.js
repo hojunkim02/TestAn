@@ -277,6 +277,7 @@ const renderOptions = () => {
   });
   $("optionTable").innerHTML = html;
 }
+let chartHits = [];
 const renderChart = () => {
   const canvas = $("chart");
   const dpr = window.devicePixelRatio || 1;
@@ -289,6 +290,7 @@ const renderChart = () => {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, w, h);
   const mode = $("graphMode").value;
+  chartHits = [];
 
   let labels, values, fmt;
   if (mode === "score" || mode === "cum") {
@@ -359,7 +361,16 @@ const renderChart = () => {
     values.forEach((v, i) => i === 0 ? ctx.moveTo(px(i), y(v)) : ctx.lineTo(px(i), y(v)));
     ctx.stroke();
     const step = Math.max(1, Math.ceil(values.length / 20));
+    const st2 = currentResult.stats;
+    const counts2 = {};
+    currentResult.students.forEach(s => { counts2[s.raw] = (counts2[s.raw] || 0) + 1; });
     values.forEach((v, i) => {
+      chartHits.push({
+        x0: px(i) - dx / 2, x1: px(i) + dx / 2,
+        info: mode === "score"
+          ? `점수 ${labels[i]} · ${counts2[labels[i]] || 0}명 (${st2.n ? ((counts2[labels[i]] || 0) / st2.n * 100).toFixed(1) : 0}%)`
+          : `점수 ${labels[i]} 이하 · 누가 ${v.toFixed(1)}%`
+      });
       ctx.beginPath();
       ctx.arc(px(i), y(v), 2.5, 0, Math.PI * 2);
       ctx.fillStyle = "#2563eb";
@@ -378,6 +389,13 @@ const renderChart = () => {
     const bw = Math.max(2, colW - 4);
     values.forEach((v, i) => {
       const x = padL + i * colW + 2;
+      const it = currentResult.items[i];
+      chartHits.push({
+        x0: padL + i * colW, x1: padL + (i + 1) * colW,
+        info: mode === "diff"
+          ? `문항 ${it.index} · 정답 ${it.key === " " ? "-" : it.key}\n난이도 ${(it.difficulty * 100).toFixed(1)}% · 변별도 ${it.discrimination.toFixed(2)}`
+          : `문항 ${it.index} · 정답 ${it.key === " " ? "-" : it.key}\n변별도 ${it.discrimination.toFixed(2)} · 난이도 ${(it.difficulty * 100).toFixed(1)}%`
+      });
       const yy = y(Math.max(v, 0));
       const bh = y(Math.min(v, 0)) - yy;
       ctx.fillStyle = v < 0 ? "#dc2626" : "#2563eb";
@@ -409,6 +427,26 @@ const renderGraphTable = () => {
   }
   $("graphTable").innerHTML = html;
 }
+const chartTip = document.createElement("div");
+chartTip.className = "chart-tip";
+documentTipInit();
+function documentTipInit() { chartTip.hidden = true; document.body.appendChild(chartTip); }
+const showChartTip = e => {
+  const rect = $("chart").getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const hit = chartHits.find(hh => mx >= hh.x0 && mx <= hh.x1);
+  if (!hit) { chartTip.hidden = true; return; }
+  chartTip.textContent = hit.info;
+  chartTip.hidden = false;
+  const tw = chartTip.offsetWidth, th = chartTip.offsetHeight;
+  let tx = e.clientX + 14, ty = e.clientY - th - 10;
+  if (tx + tw > window.innerWidth - 8) tx = e.clientX - tw - 14;
+  if (ty < 8) ty = e.clientY + 16;
+  chartTip.style.left = tx + "px";
+  chartTip.style.top = ty + "px";
+};
+$("chart").addEventListener("mousemove", showChartTip);
+$("chart").addEventListener("mouseleave", () => { chartTip.hidden = true; });
 document.querySelectorAll(".modal").forEach(m => m.addEventListener("click", e => { if (e.target === m) m.hidden = true; }));
 document.addEventListener("keydown", e => {
   if (e.key === "Escape") document.querySelectorAll(".modal:not([hidden])").forEach(m => { m.hidden = true; });
