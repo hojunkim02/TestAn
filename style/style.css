@@ -781,8 +781,10 @@ footer {
   }
   .tabs {
     overflow-x: auto;
+    overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    padding-bottom: 2px;
   }
   .tabs::-webkit-scrollbar {
     display: none;
@@ -848,6 +850,11 @@ footer {
     min-height: 36px;
     min-width: 36px;
     padding: 6px;
+  }
+  .btn.icon-btn {
+    padding: 0;
+    min-width: 40px;
+    width: 40px;
   }
   .controls input[type="number"],
   .controls input[type="text"],
