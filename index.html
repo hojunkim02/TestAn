@@ -9,15 +9,13 @@
 <body>
 <header>
   <h1>TestAn Web</h1>
-  <p class="subtitle">고전적 문항분석(CTT) 도구 · CSV / JSON 지원 · 원본: TestAn 1.0 for Windows (2000)</p>
+  <p class="subtitle">고전적 문항분석(CTT) 도구 · 원본: TestAn 1.0 for Windows (2000)</p>
 </head>
 
 <main>
   <section class="panel">
     <div class="controls">
       <button id="loadDemo" class="btn accent">샘플 데이터로 보기</button>
-      <button id="openDat" class="btn">기존 .dat 열기</button>
-      <input type="file" id="datFile" accept=".dat,.txt" hidden>
       <button id="newData" class="btn">새 응답자료 만들기</button>
       <button id="editData" class="btn">데이터 편집 (JSON)</button>
       <button id="printBtn" class="btn">인쇄</button>
@@ -136,8 +134,7 @@
   <p>GitHub Pages로 배포되는 정적 웹 앱입니다. 모든 파싱·계산은 브라우저에서 수행됩니다.</p>
 </footer>
 
-<script src="js/format.js"></script>
-<script src="js/legacy-dat.js"></script>
+<script src="js/data.js"></script>
 <script src="js/analysis.js"></script>
 <script src="js/app.js"></script>
 </body>

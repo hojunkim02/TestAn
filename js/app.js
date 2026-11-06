@@ -6,23 +6,6 @@ let currentResult = null;
 const $ = id => document.getElementById(id);
 
 $("loadDemo").addEventListener("click", loadDemo);
-$("openDat").addEventListener("click", () => $("datFile").click());
-$("datFile").addEventListener("change", e => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
-      currentData = parseDatText(reader.result);
-      run();
-    } catch (err) {
-      setStatus(".dat 파일을 읽을 수 없습니다: " + err.message, "error");
-    }
-  };
-  reader.onerror = () => setStatus(".dat 파일을 읽을 수 없습니다.", "error");
-  reader.readAsText(file, "latin1");
-  e.target.value = "";
-});
 $("newData").addEventListener("click", openNewModal);
 $("newBuild").addEventListener("click", buildNewItemTable);
 $("newGenerate").addEventListener("click", generateNewFile);
@@ -55,11 +38,10 @@ function setStatus(msg, cls) {
 }
 
 function loadDemo() {
-  fetch("sample-data/answer.csv")
+  fetch("sample-data/answer.json")
     .then(r => { if (!r.ok) throw new Error("샘플 파일을 불러올 수 없습니다."); return r.text(); })
     .then(text => {
-      currentData = parseResponsesCsv(text);
-      $("inputFileName") && ($("inputFileName").textContent = "answer.csv (샘플)");
+      currentData = parseJson(text);
       run();
     })
     .catch(err => setStatus(err.message, "error"));
@@ -78,7 +60,7 @@ function run() {
   renderGraphTable();
 }
 
-// 새 응답자료 만들기 — 원본 .dat 생성 절차와 동일한 흐름:
+// 새 응답자료 만들기 — 원본 프로그램의 자료 생성 절차와 동일한 흐름:
 // 문항 수 → 문항별 정답/답지수/포함여부 → 학생 응답(붙여넣기) → 분석
 function openNewModal() {
   $("newModal").hidden = false;
