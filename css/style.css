@@ -140,6 +140,8 @@ footer { text-align: center; color: var(--muted); font-size: 0.75rem; padding: 2
 
 .settings label { display: inline-flex; gap: 4px; align-items: center; cursor: pointer; }
 
+[hidden] { display: none !important; }
+
 .modal {
   position: fixed;
   inset: 0;
