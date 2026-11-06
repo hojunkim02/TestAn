@@ -1,20 +1,20 @@
 "use strict";
 
-// 테스트: sample-data JSON 전체 분석 + 원본 매뉴얼 골든 수치 + JSON 왕복
+// 테스트: sample-data CSV 전체 분석 + 원본 매뉴얼 골든 수치 + CSV 왕복
 const fs = require("fs");
 const path = require("path");
-const { parseJson, buildDataJson } = require("./data.js");
+const { parseDataCsv, buildDataCsv } = require("./data.js");
 const { analyze } = require("./analysis.js");
 
 const dir = path.join(__dirname, "..", "sample-data");
-const files = fs.readdirSync(dir).filter(f => f.endsWith(".json")).sort();
+const files = fs.readdirSync(dir).filter(f => f.endsWith(".csv")).sort();
 
 let pass = 0, fail = 0;
 
 files.forEach(f => {
   const text = fs.readFileSync(path.join(dir, f), "utf8");
   try {
-    const data = parseJson(text);
+    const data = parseDataCsv(text);
     const result = analyze(data);
     if (!result.students.length || !result.items.length) throw new Error("빈 결과");
     console.log(`OK  ${f}: 학생 ${result.students.length}명, 문항 ${data.nItems}개, ` +
@@ -27,7 +27,7 @@ files.forEach(f => {
 });
 
 // 골든 테스트: 원본 매뉴얼(그림 14~16)의 answer 자료 분석 수치와 일치 검증
-const ansData = parseJson(fs.readFileSync(path.join(dir, "answer.json"), "utf8"));
+const ansData = parseDataCsv(fs.readFileSync(path.join(dir, "answer.csv"), "utf8"));
 const ansResult = analyze(ansData);
 const st = ansResult.stats;
 function round(x, d) { const p = Math.pow(10, d); return Math.round(x * p) / p; }
@@ -64,16 +64,16 @@ golden.forEach(([name, val, exp]) => {
   else { console.log(`FAIL 골든 ${name}: ${val} (기대 ${exp})`); goldenFail++; fail++; }
 });
 
-// JSON 왕복: data → JSON → parse → 같은 통계
-const jsonText = buildDataJson(ansData);
-const reData = parseJson(jsonText);
+// CSV 왕복: data → CSV → parse → 같은 통계
+const csvText = buildDataCsv(ansData);
+const reData = parseDataCsv(csvText);
 const reResult = analyze(reData);
 const same = Math.abs(reResult.stats.mean - st.mean) < 1e-9 &&
   Math.abs(reResult.stats.reliability - st.reliability) < 1e-9 &&
   reResult.students.length === st.n &&
   reResult.items.every((it, i) => it.difficulty === ansResult.items[i].difficulty);
-if (same) { console.log(`OK  JSON 왕복: 평균 ${reResult.stats.mean.toFixed(3)}, α ${reResult.stats.reliability.toFixed(3)} 동일`); pass++; }
-else { console.log("FAIL JSON 왕복 불일치"); fail++; }
+if (same) { console.log(`OK  CSV 왕복: 평균 ${reResult.stats.mean.toFixed(3)}, α ${reResult.stats.reliability.toFixed(3)} 동일`); pass++; }
+else { console.log("FAIL CSV 왕복 불일치"); fail++; }
 
 if (fail > 0) { console.error(`\n${fail}개 실패`); process.exit(1); }
 console.log(`\n모든 테스트 통과 (${pass}개, 골든 ${golden.length - goldenFail}/${golden.length})`);

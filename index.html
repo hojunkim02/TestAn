@@ -10,15 +10,14 @@
 <header>
   <h1>TestAn Web</h1>
   <p class="subtitle">고전적 문항분석(CTT) 도구 · 원본: TestAn 1.0 for Windows (2000)</p>
-</head>
+</header>
 
 <main>
   <section class="panel">
     <div class="controls">
       <button id="loadDemo" class="btn accent">샘플 데이터로 보기</button>
       <button id="newData" class="btn">새 응답자료 만들기</button>
-      <button id="editData" class="btn">데이터 편집 (JSON)</button>
-      <button id="printBtn" class="btn">인쇄</button>
+      <button id="editData" class="btn">데이터 편집 (CSV)</button>
       <button id="aboutBtn" class="btn">정보</button>
     </div>
     <div id="status" class="status"></div>
@@ -89,19 +88,15 @@
 </main>
 
 <div id="newModal" class="modal" hidden>
-  <div class="modal-content">
+  <div class="modal-content modal-narrow">
     <h2>새 응답자료 만들기</h2>
+    <p class="summary">문항 수를 입력하면 기본 골격(KEY·OPTIONS·INCLUDE 행)이 포함된
+    CSV 편집 화면이 열립니다. 정답과 학생 응답(한 줄에 한 명, 빈 칸=무응답)을 채운 뒤 적용하세요.</p>
     <div class="controls">
-      <label>문항 수 (1~200): <input type="number" id="newItems" min="1" max="200" value="10"></label>
-      <button id="newBuild" class="btn">항목 표 만들기</button>
-    </div>
-    <div class="table-wrap"><table class="data-table" id="newTable"></table></div>
-    <div class="controls">
-      <label>학생 응답 (한 줄에 한 명: ID 뒤에 응답을 붙여 넣기, 공백=무응답)</label>
-    </div>
-    <textarea id="newPaste" rows="8" placeholder="예) 000112314&#10;0002 2314&#10;0003 2314"></textarea>
-    <div class="controls">
-      <button id="newGenerate" class="btn accent">분석 시작</button>
+      <label>문항 수 (1~200):
+        <input type="number" id="newItems" min="1" max="200" value="10" class="num-input">
+      </label>
+      <button id="newGenerate" class="btn accent">만들기</button>
       <button id="newCancel" class="btn">취소</button>
     </div>
   </div>
@@ -109,8 +104,9 @@
 
 <div id="editModal" class="modal" hidden>
   <div class="modal-content">
-    <h2>데이터 편집 (JSON)</h2>
-    <p class="summary">현재 데이터를 JSON으로 편집한 뒤 적용하면 다시 분석합니다. responses의 빈 문자열("")는 무응답입니다.</p>
+    <h2>데이터 편집 (CSV)</h2>
+    <p class="summary">첫 행은 헤더(id,q1,...), 이어서 KEY(정답)·OPTIONS(답지 수)·INCLUDE(분석 포함 y/n) 행,
+    그 아래 학생 행(한 줄에 한 명, 빈 칸=무응답)을 입력합니다. 적용하면 다시 분석합니다.</p>
     <textarea id="editArea" rows="18"></textarea>
     <div class="controls">
       <button id="editApply" class="btn accent">적용</button>
@@ -120,7 +116,7 @@
 </div>
 
 <div id="aboutModal" class="modal" hidden>
-  <div class="modal-content">
+  <div class="modal-content modal-narrow">
     <h2>TestAn Web</h2>
     <p>고전검사이론(CTT)에 의한 검사 분석 프로그램</p>
     <p class="summary">원본: TestAn 1.0 for Windows (한글 Visual Basic 6.0, 2000)<br>

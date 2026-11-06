@@ -6,14 +6,12 @@ let currentResult = null;
 const $ = id => document.getElementById(id);
 
 $("loadDemo").addEventListener("click", loadDemo);
-$("newData").addEventListener("click", openNewModal);
-$("newBuild").addEventListener("click", buildNewItemTable);
-$("newGenerate").addEventListener("click", generateNewFile);
+$("newData").addEventListener("click", () => { $("newModal").hidden = false; });
+$("newGenerate").addEventListener("click", generateScaffold);
 $("newCancel").addEventListener("click", () => $("newModal").hidden = true);
 $("editData").addEventListener("click", openEditModal);
 $("editApply").addEventListener("click", applyEdit);
 $("editCancel").addEventListener("click", () => $("editModal").hidden = true);
-$("printBtn").addEventListener("click", () => window.print());
 $("aboutBtn").addEventListener("click", () => $("aboutModal").hidden = false);
 $("aboutClose").addEventListener("click", () => $("aboutModal").hidden = true);
 $("itemSort").addEventListener("change", () => renderItems());
@@ -38,10 +36,10 @@ function setStatus(msg, cls) {
 }
 
 function loadDemo() {
-  fetch("sample-data/answer.json")
+  fetch("sample-data/answer.csv")
     .then(r => { if (!r.ok) throw new Error("샘플 파일을 불러올 수 없습니다."); return r.text(); })
     .then(text => {
-      currentData = parseJson(text);
+      currentData = parseDataCsv(text);
       run();
     })
     .catch(err => setStatus(err.message, "error"));
@@ -60,81 +58,26 @@ function run() {
   renderGraphTable();
 }
 
-// 새 응답자료 만들기 — 원본 프로그램의 자료 생성 절차와 동일한 흐름:
-// 문항 수 → 문항별 정답/답지수/포함여부 → 학생 응답(붙여넣기) → 분석
-function openNewModal() {
-  $("newModal").hidden = false;
-  buildNewItemTable();
-}
-
-function buildNewItemTable() {
+// 새 응답자료 만들기 — 원본처럼 문항 수 숫자 입력만으로 시작:
+// 기본 골격 CSV를 생성해 편집 화면으로 연결
+function generateScaffold() {
   const n = Math.max(1, Math.min(200, Number($("newItems").value) || 1));
   $("newItems").value = n;
-  let html = "<tr><th>문항 번호</th><th>정답</th><th>답지 수</th><th>분석 포함 (y/n)</th></tr>";
-  for (let i = 1; i <= n; i++) {
-    html += `<tr><td>${i}</td>` +
-      `<td><input type="text" maxlength="1" value="1" data-col="key" data-idx="${i}" class="cell-input"></td>` +
-      `<td><input type="number" min="2" max="9" value="4" data-col="opt" data-idx="${i}" class="cell-input"></td>` +
-      `<td><input type="text" maxlength="1" value="y" data-col="flag" data-idx="${i}" class="cell-input"></td></tr>`;
-  }
-  $("newTable").innerHTML = html;
-}
-
-function generateNewFile() {
-  const n = Math.max(1, Math.min(200, Number($("newItems").value) || 1));
-  const cells = $("newTable").querySelectorAll(".cell-input");
-  if (cells.length < n * 3) { alert("먼저 '항목 표 만들기'를 눌러주세요."); return; }
-  const keys = new Array(n).fill("1"), opts = new Array(n).fill("4"), flags = new Array(n).fill("y");
-  cells.forEach(c => {
-    const i = Number(c.dataset.idx) - 1;
-    if (c.dataset.col === "key") keys[i] = (c.value.trim() || "1").slice(0, 1);
-    if (c.dataset.col === "opt") opts[i] = String(c.value.trim() || "4");
-    if (c.dataset.col === "flag") flags[i] = (c.value.trim() || "y").toLowerCase().slice(0, 1) === "n" ? "n" : "y";
-  });
-
-  const paste = $("newPaste").value.trim();
-  if (!paste) { alert("학생 응답을 붙여 넣어주세요."); return; }
-
-  // 한 줄에 한 명: 앞부분은 ID, 마지막 문항수 길이가 응답 (공백=무응답)
-  const students = [];
-  paste.replace(/\r\n?/g, "\n").split("\n").filter(l => l.trim()).forEach((raw, i) => {
-    const line = raw.replace(/,/g, "").replace(/\s+$/, "");
-    let id, resp;
-    if (line.length >= n && line.slice(line.length - n).trim() !== "") {
-      resp = line.slice(line.length - n);
-      id = line.slice(0, line.length - n).trim();
-    } else if (line.length > n) {
-      const t = line;
-      resp = t.slice(t.length - n);
-      id = t.slice(0, t.length - n).trim();
-    } else {
-      resp = line.padEnd(n, " ");
-      id = "";
-    }
-    students.push({ id: id || ("S" + (i + 1)), resp: resp.split("") });
-  });
-
-  currentData = {
-    nItems: n,
-    key: keys,
-    numOptions: opts.map(o => parseInt(o, 10) || 0),
-    scored: flags.map(f => f !== "n"),
-    weights: new Array(n).fill(1),
-    students
-  };
   $("newModal").hidden = true;
-  run();
+  $("editArea").value = buildScaffoldCsv(n);
+  $("editModal").hidden = false;
+  setStatus("골격이 생성되었습니다. 정답(KEY)과 학생 행을 채운 뒤 적용하세요.", "");
 }
 
 function openEditModal() {
   if (!currentData) { setStatus("먼저 데이터를 불러오세요.", "error"); return; }
-  $("editArea").value = buildDataJson(currentData);
+  $("editArea").value = buildDataCsv(currentData);
   $("editModal").hidden = false;
 }
 
 function applyEdit() {
   try {
-    currentData = parseJson($("editArea").value);
+    currentData = parseDataCsv($("editArea").value);
     $("editModal").hidden = true;
     run();
   } catch (err) {

@@ -124,7 +124,7 @@ main { max-width: 1100px; margin: 0 auto; padding: 4px 16px 24px; }
 /* 입력 컨트롤 (Win11 언더라인 강조) */
 
 .controls input[type="number"], .controls input[type="text"],
-.controls select, .cell-input, .modal-content input[type="number"] {
+.controls select, .modal-content input[type="number"] {
   appearance: none;
   border: none;
   border-bottom: 1px solid var(--stroke-strong);
@@ -138,7 +138,7 @@ main { max-width: 1100px; margin: 0 auto; padding: 4px 16px 24px; }
   transition: border-color 120ms ease, background 120ms ease;
 }
 
-.controls input:focus, .controls select:focus, .cell-input:focus,
+.controls input:focus, .controls select:focus,
 .modal-content input:focus {
   outline: none;
   border-bottom: 2px solid var(--accent);
@@ -146,7 +146,7 @@ main { max-width: 1100px; margin: 0 auto; padding: 4px 16px 24px; }
   margin-bottom: -1px;
 }
 
-.controls select:hover, .controls input:hover, .cell-input:hover {
+.controls select:hover, .controls input:hover {
   background: #fff;
   border-bottom-color: var(--text-secondary);
 }
@@ -238,9 +238,6 @@ main { max-width: 1100px; margin: 0 auto; padding: 4px 16px 24px; }
 .data-table tbody tr:hover td { background: rgba(0, 103, 192, 0.045); }
 .data-table td.left { text-align: left; }
 
-/* ---------- 셀 입력 ---------- */
-
-.cell-input { width: 58px; text-align: center; }
 
 /* ---------- 캔버스 ---------- */
 
@@ -306,15 +303,9 @@ textarea::placeholder { color: var(--text-disabled); }
 
 .modal-content h2 { margin: 0 0 8px; font-size: 1.1rem; font-weight: 600; }
 
+.modal-narrow { max-width: 460px; }
+
 /* ---------- 푸터 ---------- */
 
 footer { text-align: center; color: var(--text-disabled); font-size: 0.75rem; padding: 20px; }
 
-/* ---------- 인쇄 ---------- */
-
-@media print {
-  header, footer, .panel, .tabs, .controls, .modal { display: none !important; }
-  .tab-content { display: block !important; }
-  main { max-width: none; padding: 0; }
-  body { background: #fff; }
-}

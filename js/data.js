@@ -1,65 +1,108 @@
 "use strict";
 
-// 데이터 모델 처리: JSON 단일 포맷
+// 데이터 모델 처리: CSV 단일 포맷
 //
-// { "items": [{"no":1,"key":"4","options":4,"include":true}],
-//   "students": [{"id":"0001","responses":["2","3",...]}] }
-// responses의 빈 문자열("")은 무응답이다.
+// id,q1,q2,...,qN          ← 헤더 (q 열 수 = 문항 수)
+// KEY,4,3,...              ← 정답 행
+// OPTIONS,4,4,...           ← 답지 수 행
+// INCLUDE,y,y,...           ← 분석 포함 여부 행
+// 0001,2,3,...              ← 학생 행 (빈 칸 = 무응답)
 
-function parseJson(text) {
-  const raw = JSON.parse(text);
-  const items = raw.items || [];
-  const studentsRaw = raw.students || [];
-  if (!studentsRaw.length) throw new Error("students 배열이 비어 있습니다.");
-  const nItems = items.length || studentsRaw[0].responses.length;
-  if (!nItems) throw new Error("문항 수를 알 수 없습니다.");
+function parseCsv(text) {
+  const rows = [];
+  let row = [], cell = "", inQ = false;
+  const s = text.replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n");
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (inQ) {
+      if (c === '"') {
+        if (s[i + 1] === '"') { cell += '"'; i++; }
+        else inQ = false;
+      } else cell += c;
+    } else if (c === '"') inQ = true;
+    else if (c === ",") { row.push(cell); cell = ""; }
+    else if (c === "\n") { row.push(cell); rows.push(row); row = []; cell = ""; }
+    else cell += c;
+  }
+  if (cell !== "" || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter(r => r.length > 1 || (r.length === 1 && r[0].trim() !== ""));
+}
 
-  const key = items.length ? items.map(it => cell(it.key)) : new Array(nItems).fill(" ");
-  const numOptions = items.length ? items.map(it => it.options || 0) : new Array(nItems).fill(0);
-  const scored = items.length ? items.map(it => it.include !== false) : new Array(nItems).fill(true);
-  if (key.length < nItems) throw new Error("items 수가 문항 수보다 적습니다.");
+function csvCell(v) {
+  const s = String(v == null ? "" : v);
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
 
-  const students = studentsRaw.map((s, i) => {
-    let resp = s.responses;
-    if (!Array.isArray(resp)) resp = String(resp == null ? "" : resp).split("");
-    const out = new Array(nItems);
-    for (let j = 0; j < nItems; j++) {
-      const c = j < resp.length ? cell(resp[j]) : "";
-      out[j] = c === "" ? " " : c;
-    }
-    return { id: String(s.id != null ? s.id : "").trim() || ("S" + (i + 1)), resp: out };
-  });
+function toCsv(rows) {
+  return rows.map(r => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
+}
 
+// 응답 CSV → 분석 데이터 모델
+function parseDataCsv(text) {
+  const rows = parseCsv(text);
+  if (rows.length < 2) throw new Error("데이터 행이 없습니다. 헤더 아래에 KEY/OPTIONS/INCLUDE와 학생 행이 필요합니다.");
+  const header = rows[0].map(h => h.trim());
+  if (header[0].toLowerCase() !== "id") {
+    throw new Error("첫 열은 'id'여야 합니다. (헤더: id,q1,q2,...)");
+  }
+  const nItems = header.length - 1;
+
+  let key = null, numOptions = null, scored = null;
+  const students = [];
+  for (const r of rows.slice(1)) {
+    const tag = (r[0] || "").trim().toUpperCase();
+    const cells = r.slice(1);
+    if (tag === "KEY") { key = padCells(cells, nItems); continue; }
+    if (tag === "OPTIONS") { numOptions = padCells(cells, nItems); continue; }
+    if (tag === "INCLUDE") { scored = padCells(cells, nItems); continue; }
+    students.push({
+      id: (r[0] || "").trim() || ("S" + (students.length + 1)),
+      resp: padCells(cells, nItems)
+    });
+  }
+  if (!students.length) throw new Error("학생 응답 행이 없습니다. 한 줄에 한 명씩 추가해 주세요.");
+  const keyArr = key || new Array(nItems).fill(" ");
+  if (keyArr.length < nItems) throw new Error("정답(KEY) 행이 문항 수보다 짧습니다.");
   return {
     nItems,
-    key,
-    numOptions,
-    scored,
+    key: keyArr,
+    numOptions: (numOptions || new Array(nItems).fill("0"))
+      .map(c => c === "" ? 0 : (parseInt(c, 10) || 0)),
+    scored: (scored || new Array(nItems).fill("y"))
+      .map(c => String(c).trim().toLowerCase() !== "n"),
     weights: new Array(nItems).fill(1),
-    students
+    students: students.map(s => ({
+      id: s.id,
+      resp: s.resp.map(c => c === "" ? " " : String(c))
+    }))
   };
 }
 
-function buildDataJson(data) {
-  return JSON.stringify({
-    items: Array.from({ length: data.nItems }, (_, j) => ({
-      no: j + 1,
-      key: data.key[j] === " " ? "" : data.key[j],
-      options: data.numOptions[j] || 0,
-      include: data.scored[j]
-    })),
-    students: data.students.map(s => ({
-      id: s.id,
-      responses: s.resp.map(c => c === " " ? "" : c)
-    }))
-  }, null, 2);
+// 분석 데이터 모델 → 응답 CSV
+function buildDataCsv(data) {
+  const rows = [["id", ...Array.from({ length: data.nItems }, (_, i) => "q" + (i + 1))]];
+  rows.push(["KEY", ...data.key.map(c => c === " " ? "" : c)]);
+  rows.push(["OPTIONS", ...data.numOptions.map(o => o || "")]);
+  rows.push(["INCLUDE", ...data.scored.map(s => s ? "y" : "n")]);
+  data.students.forEach(s => rows.push([s.id, ...s.resp.map(c => c === " " ? "" : c)]));
+  return toCsv(rows);
 }
 
-function cell(v) {
-  if (v == null) return "";
-  return String(v).trim();
+// 문항 수만으로 기본 골격 CSV 생성 (새 응답자료 만들기)
+function buildScaffoldCsv(nItems) {
+  const rows = [["id", ...Array.from({ length: nItems }, (_, i) => "q" + (i + 1))]];
+  rows.push(["KEY", ...new Array(nItems).fill("1")]);
+  rows.push(["OPTIONS", ...new Array(nItems).fill("4")]);
+  rows.push(["INCLUDE", ...new Array(nItems).fill("y")]);
+  return toCsv(rows);
+}
+
+function padCells(cells, n) {
+  const out = new Array(n);
+  for (let i = 0; i < n; i++) out[i] = cells[i] === undefined ? "" : String(cells[i]).trim();
+  return out;
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { parseJson, buildDataJson };
+  module.exports = { parseDataCsv, buildDataCsv, buildScaffoldCsv };
 }
