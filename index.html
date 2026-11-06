@@ -91,33 +91,52 @@
 </main>
 
 <div id="newModal" class="modal" hidden>
-  <div class="modal-content modal-narrow">
+  <div class="modal-content">
     <h2>새 응답자료 만들기</h2>
-    <p class="summary">원본 프로그램과 같은 방식입니다. 문항 수와 ID 캐릿수를 입력하고,
-    각 문항의 정답·답지 수·분석 포함 여부를 표에 입력한 뒤 만들기를 누르면
-    .dat 편집 화면이 열립니다. 학생 응답은 한 줄에 한 명씩(ID 뒤에 응답, 공백=무응답) 이어서 입력합니다.</p>
-    <div class="controls">
-      <label>문항 수 (1~200):
-        <input type="number" id="newItems" min="1" max="200" value="10">
-      </label>
-      <label>ID 캐릿수 (1~99):
-        <input type="number" id="newIdw" min="1" max="99" value="4">
-      </label>
-      <button id="newBuild" class="btn">항목 표 만들기</button>
-      <button id="newGenerate" class="btn accent">만들기</button>
-      <button id="newCancel" class="btn">취소</button>
+    <div class="wiz-step">
+      <label>문항 수 (1~200): <input type="number" id="newItems" min="1" max="200" value="10"></label>
+      <label>ID 캐릿 수 (1~99): <input type="number" id="newIdw" min="1" max="99" value="4"></label>
+      <button id="newBuild" class="btn">입력</button>
     </div>
-    <div class="table-wrap"><table class="data-table" id="newTable"></table></div>
+    <div id="wizBody" hidden>
+      <div class="wiz-layout">
+        <div class="wiz-editor">
+          <div class="controls">
+            <button id="wizPrev" class="btn" title="이전 문항">&lt;</button>
+            <span id="wizItemLabel" class="wiz-item-label">문항 1</span>
+            <button id="wizNext" class="btn" title="다음 문항">&gt;</button>
+          </div>
+          <div class="wiz-fields">
+            <label>정답: <input type="text" id="wizKey" maxlength="1" value="1"></label>
+            <label>답지 수: <input type="number" id="wizOpt" min="2" max="9" value="4"></label>
+            <label>분석 포함 여부: <input type="text" id="wizFlag" maxlength="1" value="y"></label>
+          </div>
+          <p class="summary">값을 입력하고 Enter를 누르면 다음 문항으로 이동합니다.</p>
+        </div>
+        <div class="wiz-table table-wrap">
+          <table class="data-table" id="newTable"></table>
+        </div>
+      </div>
+      <div class="controls wiz-footer">
+        <button id="newGenerate" class="btn accent">확인</button>
+        <button id="newCancel" class="btn">취소</button>
+      </div>
+    </div>
   </div>
 </div>
 
 <div id="editModal" class="modal" hidden>
-  <div class="modal-content">
-    <h2>데이터 편집 (.dat)</h2>
-    <p class="summary">원본 .dat 형식 그대로 편집합니다. 첫 줄은 문항수와 ID 캐릿수,
-    이어서 정답키·답지 수·분석 포함(y/n) 줄, 그 아래 학생 응답(한 줄에 한 명, ID 뒤에 응답, 공백=무응답)을 입력합니다.
-    적용하면 다시 분석합니다.</p>
-    <textarea id="editArea" rows="18"></textarea>
+  <div class="modal-content modal-wide">
+    <h2>데이터 편집</h2>
+    <p class="summary">정답·답지 수·분석 포함 여부와 학생 응답을 표에서 직접 수정합니다.
+    학생 행은 한 줄에 한 명이며, 응답 칸을 비워 두면 무응답으로 처리됩니다. 적용하면 다시 분석합니다.</p>
+    <div class="controls">
+      <button id="addStudent" class="btn">＋ 학생 행 추가</button>
+      <span id="editInfo" class="summary"></span>
+    </div>
+    <div class="table-wrap edit-grid-wrap">
+      <table class="data-table" id="editTable"></table>
+    </div>
     <div class="controls">
       <button id="editApply" class="btn accent">적용</button>
       <button id="editCancel" class="btn">취소</button>

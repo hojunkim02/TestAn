@@ -7,8 +7,16 @@ const $ = id => document.getElementById(id);
 
 $("loadDemo").addEventListener("click", loadDemo);
 $("newData").addEventListener("click", openNewModal);
-$("newBuild").addEventListener("click", buildNewItemTable);
-$("newGenerate").addEventListener("click", generateScaffold);
+$("newBuild").addEventListener("click", wizApplyCount);
+$("newGenerate").addEventListener("click", wizConfirm);
+$("wizPrev").addEventListener("click", () => wizNav(-1));
+$("wizNext").addEventListener("click", () => wizNav(1));
+["wizKey", "wizOpt", "wizFlag"].forEach(id => {
+  $(id).addEventListener("keydown", e => {
+    if (e.key === "Enter") { e.preventDefault(); wizNav(1); }
+  });
+  $(id).addEventListener("input", () => wizSaveCurrent());
+});
 $("importDat").addEventListener("click", () => $("datFile").click());
 $("datFile").addEventListener("change", e => {
   const file = e.target.files[0];
@@ -31,7 +39,8 @@ $("exportDat").addEventListener("click", () => {
   downloadDat("responses.dat", buildDatText(currentData));
 });
 $("newCancel").addEventListener("click", () => $("newModal").hidden = true);
-$("editData").addEventListener("click", openEditModal);
+$("editData").addEventListener("click", () => openEditModal(null));
+$("addStudent").addEventListener("click", () => { editModel.students.push({ id: "", resp: new Array(editModel.nItems).fill("") }); renderEditGrid(); });
 $("editApply").addEventListener("click", applyEdit);
 $("editCancel").addEventListener("click", () => $("editModal").hidden = true);
 $("aboutBtn").addEventListener("click", () => $("aboutModal").hidden = false);
@@ -80,60 +89,163 @@ function run() {
   renderGraphTable();
 }
 
-// 새 응답자료 만들기 — 원본 프로그램과 동일한 방식:
-// 문항 수·ID 캐릿수 입력 → 문항별 정답/답지수/분석 포함 여부 표 → .dat 골격 생성 → 편집 화면
+// 새 응답자료 만들기 — 매뉴얼의 원본 폼과 동일한 구조:
+// 문항 수·ID 캐릿 수 입력 → 문항별 정답/답지 수/분석 포함 여부를
+// 현재 문항 필드(< > 탐색, Enter로 다음)에서 입력하고 우측 표에 반영 → 확인 → 표 편집기로 이어짐
+let wiz = null;
+
 function openNewModal() {
   $("newModal").hidden = false;
-  buildNewItemTable();
+  $("wizBody").hidden = true;
 }
 
-function buildNewItemTable() {
+function wizApplyCount() {
   const n = Math.max(1, Math.min(200, Number($("newItems").value) || 1));
-  $("newItems").value = n;
   const idw = Math.max(1, Math.min(99, Number($("newIdw").value) || 4));
+  $("newItems").value = n;
   $("newIdw").value = idw;
-  let html = "<tr><th>문항 번호</th><th>정답</th><th>답지 수</th><th>분석 포함 (y/n)</th></tr>";
-  for (let i = 1; i <= n; i++) {
-    html += `<tr><td>${i}</td>` +
-      `<td><input type="text" maxlength="1" value="1" data-col="key" data-idx="${i}" class="cell-input"></td>` +
-      `<td><input type="number" min="2" max="9" value="4" data-col="opt" data-idx="${i}" class="cell-input"></td>` +
-      `<td><input type="text" maxlength="1" value="y" data-col="flag" data-idx="${i}" class="cell-input"></td></tr>`;
+  wiz = { n, idw, keys: new Array(n).fill("1"), opts: new Array(n).fill("4"), flags: new Array(n).fill("y"), cur: 0 };
+  $("wizBody").hidden = false;
+  wizShowItem();
+}
+
+function wizShowItem() {
+  $("wizItemLabel").textContent = `문항 ${wiz.cur + 1} / ${wiz.n}`;
+  $("wizKey").value = wiz.keys[wiz.cur];
+  $("wizOpt").value = wiz.opts[wiz.cur];
+  $("wizFlag").value = wiz.flags[wiz.cur];
+  renderWizTable();
+}
+
+function wizSaveCurrent() {
+  if (!wiz) return;
+  wiz.keys[wiz.cur] = ($("wizKey").value.trim() || "1").slice(0, 1);
+  wiz.opts[wiz.cur] = String($("wizOpt").value.trim() || "4");
+  wiz.flags[wiz.cur] = ($("wizFlag").value.trim() || "y").toLowerCase().slice(0, 1) === "n" ? "n" : "y";
+  renderWizTable();
+}
+
+function wizNav(delta) {
+  if (!wiz) return;
+  wizSaveCurrent();
+  wiz.cur = Math.min(wiz.n - 1, Math.max(0, wiz.cur + delta));
+  wizShowItem();
+}
+
+function renderWizTable() {
+  let html = "<tr><th>문항 번호</th><th>정답</th><th>답지 수</th><th>분석 포함 여부</th></tr>";
+  for (let i = 0; i < wiz.n; i++) {
+    const cls = i === wiz.cur ? ' class="wiz-active"' : "";
+    html += `<tr${cls}><td>${i + 1}</td><td>${wiz.keys[i]}</td><td>${wiz.opts[i]}</td><td>${wiz.flags[i]}</td></tr>`;
   }
   $("newTable").innerHTML = html;
 }
 
-function generateScaffold() {
-  const n = Math.max(1, Math.min(200, Number($("newItems").value) || 1));
-  const idw = Math.max(1, Math.min(99, Number($("newIdw").value) || 4));
-  const cells = $("newTable").querySelectorAll(".cell-input");
-  if (cells.length < n * 3) { alert("먼저 '항목 표 만들기'를 눌러주세요."); return; }
-  const keys = new Array(n).fill("1"), opts = new Array(n).fill("4"), flags = new Array(n).fill("y");
-  cells.forEach(c => {
-    const i = Number(c.dataset.idx) - 1;
-    if (c.dataset.col === "key") keys[i] = (c.value.trim() || "1").slice(0, 1);
-    if (c.dataset.col === "opt") opts[i] = String(c.value.trim() || "4");
-    if (c.dataset.col === "flag") flags[i] = (c.value.trim() || "y").toLowerCase().slice(0, 1) === "n" ? "n" : "y";
+function wizConfirm() {
+  wizSaveCurrent();
+  openEditModal({
+    nItems: wiz.n,
+    key: wiz.keys,
+    numOptions: wiz.opts.map(o => parseInt(o, 10) || 0),
+    scored: wiz.flags.map(f => f !== "n"),
+    students: []
   });
   $("newModal").hidden = true;
-  $("editArea").value = buildScaffoldDat(n, idw, keys, opts, flags);
-  $("editModal").hidden = false;
-  setStatus("골격이 생성되었습니다. 학생 응답(ID 뒤에 응답)을 채운 뒤 적용하세요.", "");
+  setStatus("문항 정보가 입력되었습니다. 학생 응답 행을 추가해 채운 뒤 적용하세요.", "");
 }
 
-function openEditModal() {
-  if (!currentData) { setStatus("먼저 데이터를 불러오세요.", "error"); return; }
-  $("editArea").value = buildDatText(currentData);
+// ---------- 데이터 편집 (표 형태) ----------
+let editModel = null;
+
+function openEditModal(pending) {
+  if (pending) {
+    editModel = { nItems: pending.nItems, key: [...pending.key], numOptions: [...pending.numOptions],
+      scored: [...pending.scored], students: pending.students.map(s => ({ id: s.id, resp: [...s.resp] })) };
+  } else if (currentData) {
+    editModel = { nItems: currentData.nItems, key: [...currentData.key], numOptions: [...currentData.numOptions],
+      scored: [...currentData.scored],
+      students: currentData.students.map(s => ({ id: s.id, resp: s.resp.map(c => c === " " ? "" : c) })) };
+  } else {
+    setStatus("먼저 데이터를 불러오세요.", "error");
+    return;
+  }
+  renderEditGrid();
   $("editModal").hidden = false;
+}
+
+function renderEditGrid() {
+  const m = editModel;
+  $("editInfo").textContent = `문항 ${m.nItems}개 · 학생 ${m.students.length}명`;
+  let html = "<tr><th>구분 / ID</th>";
+  for (let j = 0; j < m.nItems; j++) html += `<th>${j + 1}</th>`;
+  html += "<th></th></tr>";
+  html += metaRow("정답", m.key, j => `editKey${j}`);
+  html += metaRow("답지 수", m.numOptions.map(String), j => `editOpt${j}`);
+  html += metaRow("분석 포함", m.scored.map(s => s ? "y" : "n"), j => `editFlag${j}`);
+  m.students.forEach((s, i) => {
+    html += `<tr><td class="left"><input type="text" class="grid-input grid-id" data-row="${i}" value="${escAttr(s.id)}"></td>`;
+    for (let j = 0; j < m.nItems; j++) {
+      html += `<td><input type="text" maxlength="1" class="grid-input" data-row="${i}" data-col="${j}" value="${escAttr(s.resp[j])}"></td>`;
+    }
+    html += `<td><button class="btn row-del" data-row="${i}" title="행 삭제">✕</button></td></tr>`;
+  });
+  $("editTable").innerHTML = html;
+  $("editTable").querySelectorAll(".row-del").forEach(b =>
+    b.addEventListener("click", () => {
+      editModel.students.splice(Number(b.dataset.row), 1);
+      renderEditGrid();
+    }));
+}
+
+function metaRow(label, values, idFn) {
+  let html = `<tr><td class="left meta-label">${label}</td>`;
+  values.forEach((v, j) => {
+    html += `<td><input type="text" maxlength="2" class="grid-input" id="${idFn(j)}" value="${escAttr(String(v))}"></td>`;
+  });
+  return html + "<td></td></tr>";
+}
+
+function collectGrid() {
+  const m = editModel;
+  m.key = m.nItems ? Array.from({ length: m.nItems }, (_, j) => ($("editKey" + j).value.trim() || " ").slice(0, 1)) : [];
+  m.numOptions = Array.from({ length: m.nItems }, (_, j) => parseInt($("editOpt" + j).value, 10) || 0);
+  m.scored = Array.from({ length: m.nItems }, (_, j) => ($("editFlag" + j).value.trim() || "y").toLowerCase() !== "n");
+  m.students.forEach((s, i) => {
+    const cells = $("editTable").querySelectorAll(`[data-row="${i}"]`);
+    s.id = cells[0].value.trim();
+    s.resp = Array.from(cells).slice(1).map(c => c.value.trim());
+  });
 }
 
 function applyEdit() {
   try {
-    currentData = parseDatText($("editArea").value);
+    collectGrid();
+    currentData = gridToData(editModel);
     $("editModal").hidden = true;
     run();
   } catch (err) {
     alert("편집 내용을 적용할 수 없습니다:\n" + err.message);
   }
+}
+
+function gridToData(m) {
+  const students = m.students.map((s, i) => ({
+    id: s.id || ("S" + (i + 1)),
+    resp: s.resp.map(c => c === "" ? " " : c)
+  }));
+  if (!students.length) throw new Error("학생 응답 행이 없습니다. '＋ 학생 행 추가'로 추가해 주세요.");
+  return {
+    nItems: m.nItems,
+    key: m.key,
+    numOptions: m.numOptions,
+    scored: m.scored,
+    weights: new Array(m.nItems).fill(1),
+    students
+  };
+}
+
+function escAttr(v) {
+  return String(v).replace(/"/g, "&quot;").replace(/</g, "&lt;");
 }
 
 function downloadDat(name, content) {

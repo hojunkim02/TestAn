@@ -315,3 +315,104 @@ textarea::placeholder { color: var(--text-disabled); }
 
 footer { text-align: center; color: var(--text-disabled); font-size: 0.75rem; padding: 20px; }
 
+
+/* ---------- 새 응답자료 만들기 (매뉴얼 폼 방식) ---------- */
+
+.wiz-step {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 6px 0 12px;
+}
+
+.wiz-step label {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.wiz-layout {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.wiz-editor { flex: 0 0 240px; }
+
+.wiz-item-label {
+  min-width: 90px;
+  text-align: center;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.wiz-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.wiz-fields label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.wiz-fields input { width: 90px; }
+.wiz-fields #wizKey { width: 60px; }
+
+.wiz-table { flex: 1; max-height: 320px; }
+
+.wiz-footer { margin-top: 14px; justify-content: flex-end; }
+
+.data-table tr.wiz-active td {
+  background: rgba(0, 103, 192, 0.10);
+  font-weight: 600;
+}
+
+/* ---------- 데이터 편집 그리드 ---------- */
+
+.modal-wide { max-width: 1000px; }
+
+.edit-grid-wrap { max-height: 55vh; }
+
+.grid-input {
+  width: 100%;
+  min-width: 34px;
+  max-width: 42px;
+  padding: 3px 4px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-s);
+  background: transparent;
+  font: inherit;
+  font-size: 0.78rem;
+  text-align: center;
+  color: var(--text);
+  transition: background 100ms ease, border-color 100ms ease;
+}
+
+.grid-input:hover { background: rgba(0, 0, 0, 0.04); }
+
+.grid-input:focus {
+  outline: none;
+  background: #fff;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.grid-id { max-width: 90px; text-align: left; }
+
+.meta-label { color: var(--text-secondary); font-weight: 600; }
+
+.row-del {
+  min-height: 24px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
