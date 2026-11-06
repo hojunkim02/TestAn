@@ -530,10 +530,10 @@ const renderChart = () => {
   chartHits = [];
   const { labels, values, fmt, asLine, counts } = chartSeries(mode);
 
-  const padL = 52;
+  const padL = 56;
   const padR = 20;
   const padT = 34;
-  const padB = 40;
+  const padB = 48;
   const plotW = w - padL - padR;
   const plotH = h - padT - padB;
   const maxV = Math.max(...values, 0.001);
@@ -551,6 +551,23 @@ const renderChart = () => {
   ctx.fillStyle = P.title;
   ctx.font = "600 13px 'Segoe UI', sans-serif";
   ctx.fillText(title, padL, 18);
+
+  // 축 제목 (모드별 x/y 축이 무엇을 뜻하는지 명시)
+  const [xTitle, yTitle] =
+    mode === "diff" || mode === "disc"
+      ? ["문항 번호", mode === "diff" ? "정답률 (%)" : "변별도 (D)"]
+      : ["점수", mode === "score" ? "피험자 수 (명)" : "누가 백분율 (%)"];
+  ctx.fillStyle = P.axis;
+  ctx.font = "600 11px 'Segoe UI', sans-serif";
+  ctx.save();
+  ctx.translate(14, padT + plotH / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.textAlign = "center";
+  ctx.fillText(yTitle, 0, 0);
+  ctx.restore();
+  ctx.textAlign = "center";
+  ctx.fillText(xTitle, padL + plotW / 2, h - 8);
+  ctx.textAlign = "left";
 
   // y축 눈금·그리드 + 수치 라벨
   const steps = 5;
