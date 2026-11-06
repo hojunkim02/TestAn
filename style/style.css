@@ -35,3 +35,10 @@
   .row-del{min-height:32px;padding:4px 10px;}
   .controls input[type="number"],.controls input[type="text"],.controls select{min-height:38px;}
 }
+
+/* ---------- UI 다듬기 ---------- */
+.controls .summary{flex-basis:100%;margin:2px 0 0;}
+.controls label{white-space:nowrap;}
+.modal-content p{margin:6px 0 10px;}
+.modal-narrow{max-width:420px;}
+.wiz-step{gap:10px;padding:2px 0 10px;}

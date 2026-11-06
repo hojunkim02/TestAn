@@ -368,6 +368,10 @@ const renderGraphTable = () => {
 }
 
 // 이벤트 등록 (모든 정의 후 실행)
+document.querySelectorAll(".modal").forEach(m => m.addEventListener("click", e => { if (e.target === m) m.hidden = true; }));
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") document.querySelectorAll(".modal:not([hidden])").forEach(m => { m.hidden = true; });
+});
 $("loadDemo").addEventListener("click", loadDemo);
 $("newData").addEventListener("click", openNewModal);
 $("newBuild").addEventListener("click", wizApplyCount);
