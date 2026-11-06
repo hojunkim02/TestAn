@@ -658,8 +658,7 @@ document.addEventListener("keydown", (e) => {
     document
       .querySelectorAll(".modal:not([hidden])")
       .forEach((m) => (m.hidden = true));
-    toggleExportMenu(false);
-    toggleImportMenu(false);
+    closeMenus();
   }
 });
 $("loadDemo").addEventListener("click", loadDemo);
@@ -716,17 +715,67 @@ const importFile = async (file) => {
   }
 };
 
-// 불러오기 드롭다운 메뉴
-const importMenu = $("importMenu");
-const toggleImportMenu = (show = !importMenu.hidden) => {
-  importMenu.hidden = show;
+// ---------- 드롭다운 메뉴 공통 동작 (Fluent menu 패턴) ----------
+
+const dropdowns = [
+  { btn: $("importBtn"), menu: $("importMenu") },
+  { btn: $("exportBtn"), menu: $("exportMenu") },
+];
+
+/** 메뉴 하나의 열림 상태와 버튼 표시(aria-expanded, 셰브론)를 함께 갱신한다. */
+const setMenuOpen = ({ btn, menu }, show) => {
+  menu.hidden = !show;
+  btn.setAttribute("aria-expanded", String(show));
+  btn.classList.toggle("open", show);
 };
-$("importBtn").addEventListener("click", () => {
-  toggleImportMenu();
-  toggleExportMenu(false);
+
+/** 열려 있는 모든 드롭다운을 닫는다. */
+const closeMenus = () => dropdowns.forEach((d) => setMenuOpen(d, false));
+
+/** 버튼 클릭: 해당 메뉴만 토글하고, 열릴 때 첫 항목에 포커스를 준다. */
+const toggleMenu = (d) => {
+  const show = d.menu.hidden;
+  closeMenus();
+  if (show) {
+    setMenuOpen(d, true);
+    d.menu.querySelector(".menu-item")?.focus();
+  }
+};
+dropdowns.forEach((d) => d.btn.addEventListener("click", () => toggleMenu(d)));
+
+// 바깥 클릭(터치 포함) 시 닫기 — pointerdown이라 드래그 후 놓아도 정확히 닫힌다
+document.addEventListener("pointerdown", (e) => {
+  if (
+    !dropdowns.some(
+      ({ btn, menu }) => btn.contains(e.target) || menu.contains(e.target),
+    )
+  ) {
+    closeMenus();
+  }
 });
+
+// 키보드 탐색: ↓/↑로 항목 이동, Escape로 닫기 (기존 모달 닫기와 함께 처리)
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    closeMenus();
+    return;
+  }
+  if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+  const open = dropdowns.find((d) => !d.menu.hidden);
+  if (!open) return;
+  e.preventDefault();
+  const items = [...open.menu.querySelectorAll(".menu-item")];
+  const idx = items.indexOf(document.activeElement);
+  const next =
+    e.key === "ArrowDown"
+      ? (idx + 1) % items.length
+      : (idx - 1 + items.length) % items.length;
+  items[next].focus();
+});
+
+// 불러오기 메뉴: 형식에 맞는 파일 필터로 선택 다이얼로그를 연다
 const pickFile = (accept) => {
-  toggleImportMenu(false);
+  closeMenus();
   $("fileInput").accept = accept;
   $("fileInput").click();
 };
@@ -747,17 +796,9 @@ const exportAs = (build) => {
   build(currentData);
 };
 
-// 내보내기 드롭다운 메뉴
-const exportMenu = $("exportMenu");
-const toggleExportMenu = (show = !exportMenu.hidden) => {
-  exportMenu.hidden = show;
-};
-$("exportBtn").addEventListener("click", () => {
-  toggleExportMenu();
-  toggleImportMenu(false);
-});
+// 내보내기 메뉴
 $("exportCsv").addEventListener("click", () => {
-  toggleExportMenu(false);
+  closeMenus();
   exportAs((d) =>
     downloadFile(
       "responses.csv",
@@ -767,16 +808,10 @@ $("exportCsv").addEventListener("click", () => {
   );
 });
 $("exportDat").addEventListener("click", () => {
-  toggleExportMenu(false);
+  closeMenus();
   exportAs((d) =>
     downloadFile("responses.dat", buildDatText(d), "text/plain;charset=latin1"),
   );
-});
-document.addEventListener("click", (e) => {
-  if (!e.target.closest(".menu-wrap")) {
-    toggleExportMenu(false);
-    toggleImportMenu(false);
-  }
 });
 $("newCancel").addEventListener("click", () => ($("newModal").hidden = true));
 $("editData").addEventListener("click", () => openEditModal(null));

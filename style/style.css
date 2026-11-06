@@ -142,23 +142,40 @@ main {
   outline: 2px solid #fff;
   outline-offset: 1px;
 }
-/* Dropdown menus — Fluent 2 flyout */
+/* Dropdown menus — Fluent 2 menu flyout */
 .menu-wrap {
   position: relative;
 }
+.menu-btn .chev {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 10px;
+  color: var(--text-tertiary);
+  transition: transform var(--duration-2) var(--curve-decel);
+}
+.menu-btn.open .chev {
+  transform: rotate(180deg);
+}
 .menu {
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + 6px);
   right: 0;
   display: flex;
   flex-direction: column;
-  min-width: 150px;
+  min-width: 160px;
   padding: 4px;
   background: var(--card-solid);
   border: 1px solid var(--stroke);
   border-radius: var(--radius-m);
-  box-shadow: var(--shadow-8);
-  z-index: 30;
+  box-shadow: var(--shadow-16);
+  z-index: 40;
+  animation: menu-in var(--duration-2) var(--curve-decel);
+}
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
 }
 .menu-item {
   appearance: none;
@@ -166,6 +183,7 @@ main {
   border: none;
   border-radius: var(--radius-s);
   padding: 6px 10px;
+  min-height: 32px;
   font: inherit;
   font-size: 14px;
   line-height: 20px;
@@ -180,6 +198,10 @@ main {
 .menu-item:active {
   background: var(--card-pressed);
   color: var(--accent-active);
+}
+.menu-item:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: -2px;
 }
 .controls {
   display: flex;

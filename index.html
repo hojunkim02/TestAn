@@ -33,18 +33,40 @@
           <button id="newData" class="btn">새 응답자료 만들기</button>
           <button id="editData" class="btn">데이터 편집</button>
           <div class="menu-wrap">
-            <button id="importBtn" class="btn">불러오기 ▾</button>
-            <div id="importMenu" class="menu" hidden>
-              <button class="menu-item" id="importCsv">CSV (.csv)</button>
-              <button class="menu-item" id="importDat">DAT (.dat)</button>
+            <button
+              id="importBtn"
+              class="btn menu-btn"
+              aria-haspopup="menu"
+              aria-expanded="false"
+            >
+              불러오기 <span class="chev">▾</span>
+            </button>
+            <div id="importMenu" class="menu" role="menu" hidden>
+              <button class="menu-item" id="importCsv" role="menuitem">
+                CSV (.csv)
+              </button>
+              <button class="menu-item" id="importDat" role="menuitem">
+                DAT (.dat)
+              </button>
             </div>
           </div>
           <input type="file" id="fileInput" accept=".csv,.dat,.txt" hidden />
           <div class="menu-wrap">
-            <button id="exportBtn" class="btn">내보내기 ▾</button>
-            <div id="exportMenu" class="menu" hidden>
-              <button class="menu-item" id="exportCsv">CSV (.csv)</button>
-              <button class="menu-item" id="exportDat">DAT (.dat)</button>
+            <button
+              id="exportBtn"
+              class="btn menu-btn"
+              aria-haspopup="menu"
+              aria-expanded="false"
+            >
+              내보내기 <span class="chev">▾</span>
+            </button>
+            <div id="exportMenu" class="menu" role="menu" hidden>
+              <button class="menu-item" id="exportCsv" role="menuitem">
+                CSV (.csv)
+              </button>
+              <button class="menu-item" id="exportDat" role="menuitem">
+                DAT (.dat)
+              </button>
             </div>
           </div>
           <button id="aboutBtn" class="btn">정보</button>
